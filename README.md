@@ -1,80 +1,87 @@
-# Big Data and Data Science Technology, E24 course exercises
+# Big Data and Data Science Technology, E25 course exercises
 
-This repository contains the exercises related to the course [Big Data and Data Science Technology, E24](https://odin.sdu.dk/sitecore/index.php?a=fagbesk&id=138236&listid=18888&lang=en) at University of Southern Denmark.
+This repository contains the exercises related to the course [Big Data and Data Science Technology, E25](https://odin.sdu.dk/sitecore/index.php?a=fagbesk&id=138236&listid=18884&lang=en) at University of Southern Denmark.
 
 ## Instructors
 
-This year's instructors are Kasper Svane and Anders Launer Bæk-Petersen who completed the course in E23 and E22 respectively. We will facilitate the exercise hours and are available on the announced Discord channel for this course.
-We encourage you to provide open and direct feedback along the semester. Please feel free to open new GitHub issues for bugs, etc. [here](https://github.com/jakobhviid/BigDataCourseExercises/issues) if you encounter unclear information or experience bugs in our examples!
+This year's instructors are Oliver Feldborg Hansen and Anders Launer Bæk-Petersen, who completed the course in E24 and E22, respectively. We will facilitate the exercise hours and are available on the announced Discord channel for this course. An invitation link to the Discord channel will be provided in the first lecture.
+We encourage you to provide open and direct feedback throughout the semester. Please feel free to open new GitHub issues for bugs, etc. [here](https://github.com/jakobhviid/BigDataCourseExercises/issues) if you encounter unclear information or experience bugs in our examples!
 
 ## Objective
 
-The objective of the exercises is to navigate you through the practical aspects of the curriculum.
-Last semester, we transitioned from the docker-compose orchestrator to Kubernetes to minimize the gap between a single host system and a multi-node system (E23). Therefore our focus is to provide exercises that give you hands-on experience with Kubernetes and the tools that are commonly used in the Big Data and Data Science field.
+The goal of these exercises is to guide you through the practical parts of the curriculum. The structure of this year’s exercises was inspired by the architecture lecture in the course. We previously moved from a Docker Compose setup to a Kubernetes-based one.
 
-Our primary focus this semester is twofold:
+Our main focus this semester is twofold:
 
-- Fill in the missing gaps with extra exercises to match the curriculum for this course.  
-- Streamline the existing exercises.
+- Develop an exercise framework where we create diagrams of the architecture before starting implementation.
+- Start exercises that provide hands-on experience with Kubernetes and the tools commonly used in Big Data and Data Science fields.
 
 ## Connect to the shared Kubernetes cluster
 
 You will be using a shared Kubernetes cluster for the exercises hosted by the university. All the exercises are designed to be run from your localhost using `kubectl` commands.
 
-You will be provided with a `kubeconfig` file that you can use to connect to the cluster prior to the first exercise session.
-Information about the `kubeconfig` file(s) can be discoreved here: [Configure Access to Multiple Clusters](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/). For further information, please look into [Organizing Cluster Access Using kubeconfig Files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) if you need to manage multiple Kubernetes clusters in your own environment.
+You will be provided with a `kubeconfig` file that you can use to connect to the cluster before the first exercise session, provided you are on the SDU network.
+If you are not on the SDU network, you can use a VPN connection to access it. You can find more information about the VPN connection [here](https://any2.sdu.dk).
+
+Information about the `kubeconfig` file(s) can be discovered here: [Configure Access to Multiple Clusters](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/). For further details, please look into [Organizing Cluster Access Using kubeconfig Files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) if you need to manage multiple Kubernetes clusters in your environment.
 
 ## Content of the repository
 
-The root of this repository will be related to the content of the current semester and the folder `archive` will contain material for the previous semester. The `lectures` folder and `services` folder contain the exercise material for the current semester.
+The repository will contain materials from previous semesters and the exercises for the current semester. The folders `archive` and `services` contain material from the previous semesters. The `lectures` folder contains the material for the current semester.
 
 ```text
 .
-├── LICENSE
-├── README.md
 ├── archive
 │   ├── E22
-│   └── E23
+│   ├── E23
+│   └── E24
 ├── infrastructure
-│   ├── README.md
 │   ├── create-admin-kubeconfig.sh
 │   ├── create-user.sh
 │   ├── create-users.sh
+│   ├── delete-users.sh
 │   ├── images
-│   │   ├── README.md
 │   │   ├── __init__.py
 │   │   ├── images.txt
 │   │   ├── persist-images.py
+│   │   ├── README.md
 │   │   ├── side-load.py
 │   │   ├── side-load.sh
 │   │   └── utils.py
-│   ├── share_kubeconfigs
-│   │   ├── sent_msg_groups.py
-│   │   ├── sent_msg_students.py
-│   │   └── src
-│   │       ├── __init__.py
-│   │       ├── groups.py
-│   │       ├── msg.py
-│   │       └── students.py
-│   └── users.txt
+│   ├── parse_its.py
+│   ├── README.md
+│   └── share_kubeconfigs
+│       ├── parse_groups.ipynb
+│       ├── parse_students copy.ipynb
+│       ├── parse_students.ipynb
+│       ├── sent_msg_groups.py
+│       ├── sent_msg_students.py
+│       ├── sent_msg.ipynb
+│       └── src
+│           ├── __init__.py
+│           ├── groups.py
+│           ├── msg.py
+│           └── students.py
 ├── lectures
-│   ├── {01, 02, ..., 07}
-│   │   ├── README.md
-│   │   └── ...
+│   └── {01, 02, ..., 07}
+│       └── README.md
+├── LICENSE
+├── README.md
 └── services
-    ├── README.md
+    ├── atlas
     ├── hdfs
-    │   ├── README.md
     │   ├── configmap.yaml
     │   ├── datanodes.yaml
     │   ├── hdfs-cli.yaml
-    │   └── namenode.yaml
+    │   ├── namenode.yaml
+    │   └── README.md
     ├── interactive
     │   ├── Dockerfile
-    │   ├── README.md
     │   ├── interactive.yaml
+    │   ├── README.md
     │   └── requirements.txt
-    └── kafka-connect
-        ├── Dockerfile
-        └── README.md
+    ├── kafka-connect
+    │   ├── Dockerfile
+    │   └── README.md
+    └── README.md
 ```
