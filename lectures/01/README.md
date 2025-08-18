@@ -4,7 +4,7 @@
 
 ### Oliver Feldborg Hansen
 
-![Kasper Svane](https://media.licdn.com/dms/image/v2/D4E03AQFmQrvFqB4u5A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1713376210091?e=1758153600&v=beta&t=pvpHb_XR4s-evlX41LPsDMOLJla6lRCDZjZHDGrtMhc)
+![Oliver Feldborg Hansen](https://media.licdn.com/dms/image/v2/D4E03AQFmQrvFqB4u5A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1713376210091?e=1758153600&v=beta&t=pvpHb_XR4s-evlX41LPsDMOLJla6lRCDZjZHDGrtMhc)
 
 - 9th semester Software Engineering student
 - Industry for 1 year
