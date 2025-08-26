@@ -1,7 +1,7 @@
 #!/bin/bash
 TMPFILE="namespaces.txt"
 
-kubectl get ns  --no-headers -o custom-columns=":metadata.name" > $TMPFILE
+microk8s kubectl get ns  --no-headers -o custom-columns=":metadata.name" > $TMPFILE
 
 
 
@@ -20,9 +20,9 @@ do
     echo "value to keep:    " $value
   else
     echo "value to delete:  " $value
-    kubectl delete all --all -n $value
-    kubectl delete serviceaccount,role,rolebinding,secret --all -n $value
-    kubectl delete ns $value
+    microk8s kubectl delete all --all -n $value
+    microk8s kubectl delete serviceaccount,role,rolebinding,secret --all -n $value
+    microk8s kubectl delete ns $value
   fi
 done < $TMPFILE
 
