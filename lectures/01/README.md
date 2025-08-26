@@ -47,7 +47,7 @@ Please open issues [here](https://github.com/jakobhviid/BigDataCourseExercises/i
 ## Subject and objective for this exercises
 
 The exercises for the first lecture are to introduce and refresh the necessary components and terminology of Kubernetes. This will be the only purely hands-on exercise, without a case.
- 
+
 The below-mentioned material has been sourced
 from [https://kubernetes.io/docs/tutorials/kubernetes-basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/)
 and familiarizing with this content will be sufficient for progressing along the exercises.
@@ -339,26 +339,7 @@ delete it using the file you used to create the resources with using the command
 
 ## Step-by-step guide to clean up
 
-
-### Automated clean up
-
-If you have Python installed on your machine, you can use the following command to clean up all resources:
-
-**Windows**:
-
-````bash
-python cleanup.py
-````
-
-**MacOS / Linux**:
-
-````bash
-python3 cleanup.py
-````
-
 The script will delete all resources created in the exercises.
-
-### Manual clean up
 
 - Today's exercises.
     1. `kubectl delete -f hello-kubernetes.yaml`
