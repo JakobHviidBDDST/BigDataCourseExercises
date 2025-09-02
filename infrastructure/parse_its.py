@@ -3,7 +3,7 @@ from pathlib import Path
 
 def parse_participants(
     filename: Path,
-    filename_out: Path = "users.txt",
+    filename_out: Path = Path("users.txt"),
     prefix: str = "bd-stud",
     course_desc: str = "bd",
 ):
@@ -33,4 +33,4 @@ def parse_participants(
 
 
 if __name__ == "__main__":
-    parse_participants(Path("its.txt"), Path("tmp-users.txt"))
+    parse_participants(Path("./data/its.txt"), Path("tmp-users.txt"))
