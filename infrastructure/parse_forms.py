@@ -50,6 +50,10 @@ def parse_participants(
     df["student_mail"] = df["student_mail"].apply(lambda x: x.lower())
     df["student"] = df["student_mail"].apply(lambda x: x.split("@")[0])
 
+    # Fjern Henrik
+    henrik_id = "hebas16"
+    df = df.loc[~df["student_mail"].apply(lambda x: x.startswith(henrik_id))]
+
     print("Students pr. group")
     print(df.groupby("Id", as_index=False).size())
 
@@ -57,10 +61,11 @@ def parse_participants(
 
     with open(filename_ref, mode="r") as f:
         users = f.read().splitlines()
-        users = [u.split("-")[-1] for u in users]
 
     print("Students missing a group")
-    print(set(users) - set(df["student"].to_list()))
+    users = set([u.split("-")[-1] for u in users])
+    users.remove(henrik_id)
+    print(users - set(df["student"].to_list()))
 
     df_gr = df.groupby("Id", as_index=False).agg({"student": lambda x: ", ".join(x)})
     df_gr.to_csv(filename_out, index=False)
