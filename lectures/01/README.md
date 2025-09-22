@@ -139,6 +139,18 @@ here: [Overview of Kubernetes Services](https://kubernetes.io/docs/tutorials/kub
 > exposure, load balancing and service discovery for those Pods.
 *[kubernetes.io - Using a Service to Expose Your App. (Accessed: 04 September 2023)](https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/)*
 
+## Online Resources
+
+YouTube videos to watch to understand the important components of K8s
+
+### Kubernetes Crash Course for Absolute Beginners [NEW] by TechWorld with Nana
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/s_o8dwzRlu4/0.jpg)](https://www.youtube.com/watch?v=s_o8dwzRlu4)
+
+### Kubernetes Tutorial for Beginners [FULL COURSE in 4 Hours] by TechWorld with Nana
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/X48VuDVv0do/0.jpg)](https://www.youtube.com/watch?v=X48VuDVv0do)
+
 ## Exercises
 
 ### Exercise 1 - Kubernetes setup
