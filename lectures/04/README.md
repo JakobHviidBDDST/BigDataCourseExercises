@@ -37,7 +37,7 @@ For some general quick start guidance on utilising the technologies, please view
 
 ## Case Description
 
-Remember PowerGrid Analytics LLC? Well they certainly remember you! And they are back for more. After your previous wonderful work, a *spark* has lit up during a C suite meeting and they have hired you again, this time to help them with distributed data streaming! 
+Remember PowerGrid Analytics LLC? Well they certainly remember you! And they are back for more. After your previous wonderful work, a *spark* has lit up during a C suite meeting and they have hired you again, this time to help them with distributed data processing! 
 
 There are a bunch of things they want you to achieve: 
 
