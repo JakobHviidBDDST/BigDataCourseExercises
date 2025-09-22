@@ -1,12 +1,12 @@
 # Lecture 04 - Spark
 
-This week's exercises will use the case-based structure described in the general overview from Lecture 01's exercise. To summarize the process:
+This week's exercises will follow the case-based structure explained in the overview from Lecture 01's exercise. To summarize the process:
 
-- You will be presented with a case that needs solving.
-- You must design the architecture you believe can solve this problem (use your preferred drawing tool, e.g., draw.io, Excalidraw, etc.).
-  - Ideally, using the technologies covered in the course so far.
-  - You will receive feedback on your proposed architecture from the instructors.
-- Once the architecture has been drawn, try to assemble it using the selected technologies and blueprints.
+- You will receive a case that needs solving.
+- You should design the architecture that you believe can solve this problem (use your preferred drawing tool, such as draw.io, Excalidraw, etc.).
+  - Ideally, use the technologies covered in the course so far.
+  - You will get feedback on your proposed architecture from the instructors.
+- Once you've drawn the architecture, try to assemble it using the chosen technologies and blueprints.
 
 The process can be visualized as follows:
 
@@ -33,35 +33,35 @@ flowchart LR
 
 The new technologies introduced this week are: **Spark, Spark SQL and Spark Streaming**.
 
-For some general quick start guidance on utilising the technologies, please view the archived exerises from [Lecture 04 E24](https://github.com/JakobHviidBDDST/BigDataCourseExercises/tree/main/archive/E24/04).
+For some general quick start guidance on utilising the technologies, please view the archived exercises from [Lecture 04 E24](https://github.com/JakobHviidBDDST/BigDataCourseExercises/tree/main/archive/E24/04).
 
 ## Case Description
 
-Remember PowerGrid Analytics LLC? Well they certainly remember you! And they are back for more. After your previous wonderful work, a *spark* has lit up during a C suite meeting and they have hired you again, this time to help them with distributed data processing! 
+Remember PowerGrid Analytics LLC? Well, they definitely remember you! And they're back for more. After your previous excellent work, a *spark* has ignited during a C-suite meeting, and they've hired you again, this time to assist with distributed data processing!
 
-There are a bunch of things they want you to achieve: 
+There are several objectives they want you to achieve:
 
-Remember that unorganized employee data? Well apparently those are quite long and detailed reports, and they want the counts of specific words from the reports stored in long term storage.
+Remember that unorganized employee data? Well, apparently those are quite long and detailed reports, and they want the counts of specific words from the reports stored in long-term storage.
 
-Aditionally, they want to do some math with their wattage data that they meassure. First of all, they want you to calculate the averages of the sample values of the wattage data stored in long term storage. Secondly, they also want to do this live during ingestion, straight from the Kafka topic you ingest from!
+Additionally, they want to perform some calculations with their wattage data that they measure. First, they want you to calculate the averages of the sample values of the wattage data stored in long-term storage. Second, they also want to do this live during ingestion, directly from the Kafka topic you are ingesting from!
 
-NB: Remember that the theme of today's exercises is **Spark**, if you find the case's goals hard to understand, have a look at archived exercise ;)
+NB: Remember that the theme of today's exercises is **Spark**, if you find the case's goals hard to understand, have a look at the archived exercise ;)
 
 ### Solution Requirements
 
-- The solution must be able to analyze text files from long term storage.
-- The solution must be able to find the average sample values of the data stored in long term storage and the live data being ingested.
+- The solution must be able to analyze text files from long-term storage.
+- The solution must be able to find the average sample values of the data stored in long-term storage and the live data being ingested.
 
 ### Demonstrate
 
-- How to analyze text files in long term storage, and getting the specific word counts.
-- How to find the average sample values of data in long term storage.
+- How to analyze text files in long-term storage, and get the specific word counts.
+- How to find the average sample values of data in long-term storage.
 - How to find the average sample values of data from a topic in a streaming platform.
 
 ### Remember to
 
 - Identify bottlenecks.
-- Consider how scalability will be handled.
+- Consider how scalability will be managed.
 - Address data flow.
 - Present arguments for and discuss:
-  - The usage of Spark for these tasks compared to previous technologies
+  - The use of **Spark** for these tasks compared to previous technologies.
