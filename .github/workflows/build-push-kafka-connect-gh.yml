@@ -2,18 +2,15 @@ name: Build and push - GITHUB ACTIONS - service/kafka-connect
 
 on:
   push:
+    tags: 
+      - "v*"
+  pull_request:
+    branches:
+      - main
+      - "releases/**"
     paths: 
       - "services/kafka-connect/**"
-      - ".github/workflows/**kafka-connect-gh.yml"
-  #   tags: 
-  #     - "v*"
-  # pull_request:
-  #   branches:
-  #     - main
-  #     - "releases/**"
-  #   paths: 
-  #     - "services/kafka-connect/**"
-  #     - ".github/workflows/**kafka-connect.yml"
+      - ".github/workflows/**kafka-connect.yml"
 
 env:
   IMAGE_NAME: kafka-connect
