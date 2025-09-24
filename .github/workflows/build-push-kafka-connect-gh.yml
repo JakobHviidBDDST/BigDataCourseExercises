@@ -1,0 +1,80 @@
+name: Build and push - GITHUB ACTIONS - service/kafka-connect
+
+on:
+  push:
+    - "services/kafka-connect/**"
+    - ".github/workflows/**kafka-connect-gh.yml"
+  #   tags: 
+  #     - "v*"
+  # pull_request:
+  #   branches:
+  #     - main
+  #     - "releases/**"
+  #   paths: 
+  #     - "services/kafka-connect/**"
+  #     - ".github/workflows/**kafka-connect.yml"
+
+env:
+  IMAGE_NAME: kafka-connect
+  CP_VERSION: "7.4.10"
+
+permissions:
+  contents: read
+  packages: write
+  # attestations: write
+  # id-token: write
+
+
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            name=${{ vars.REGISTRY_NAME }}/${{ github.repository }}-${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.REGISTRY_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: "{{defaultContext}}:services/kafka-connect/"
+          build-args: |
+              CP_VERSION=${{ env.CP_VERSION }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      
+      # - name: Generate artifact attestation
+      #   uses: actions/attest-build-provenance@v2
+      #   with:
+      #     subject-name: ${{ steps.meta.outputs.tags }}
+      #     subject-digest: ${{ steps.push.outputs.digest }}
+      #     push-to-registry: true
