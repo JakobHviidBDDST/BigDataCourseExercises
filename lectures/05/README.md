@@ -43,8 +43,8 @@ The company has realized that managing power grid data requires not only quick c
 
 ### Solution Requirements
 
-- The solution must be capable of analyzing text files stored long-term with SQL and Hive.
-- The solution must be able to store documents from a Kafka topic.
+- The solution must be capable of analyzing text files stored long-term storage with SQL using Hive.
+- The solution must be able to store documents in MongoDB from a Kafka topic.
 - The solution must be able to cache the most recent records from each station for low-latency retrieval.
 
 ### Demonstrate
