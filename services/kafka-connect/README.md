@@ -6,4 +6,4 @@ This folder includes the build recipe and components for the used image running 
 - [confluentinc/kafka-connect-hdfs:latest](https://docs.confluent.io/kafka-connectors/hdfs/current/overview.html)
 - [jcustenborder/kafka-connect-redis:latest](https://docs.confluent.io/kafka-connectors/redis/current/overview.html)
 
-This image is based on `confluentinc/cp-server-connect-base:7.3.1` and the above-mentioned connectors have been added to extend the base image. Please look into the [Dockerfile](./Dockerfile) for greater context.
+This image is based on `confluentinc/cp-server-connect-base:7.4.10` and the above-mentioned connectors have been added to extend the base image. Please look into the [Dockerfile](./Dockerfile) for greater context.
