@@ -2,8 +2,9 @@ name: Build and push - GITHUB ACTIONS - service/kafka-connect
 
 on:
   push:
-    - "services/kafka-connect/**"
-    - ".github/workflows/**kafka-connect-gh.yml"
+    paths: 
+      - "services/kafka-connect/**"
+      - ".github/workflows/**kafka-connect-gh.yml"
   #   tags: 
   #     - "v*"
   # pull_request:

@@ -21,8 +21,8 @@ do
   else
     echo "value to delete:  " $value
     microk8s kubectl delete all --all -n $value
-    microk8s kubectl delete serviceaccount,role,rolebinding,secret --all -n $value
-    microk8s kubectl delete ns $value
+    # microk8s kubectl delete serviceaccount,role,rolebinding,secret --all -n $value
+    # microk8s kubectl delete ns $value
   fi
 done < $TMPFILE
 
