@@ -5,8 +5,27 @@ The main idea is that the students only have to install the `kubectl` client. Th
 ## Allow incoming TCP traffic to port 16443
 
 ```bash
-sudo iptables -A INPUT -p tcp --dport 16443 -s 10.112.0.0/12 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 16443 -s 10.X.0.0/12 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -s 10.x.0.0/12 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -s 10.152.183.1/12 -j ACCEPT
 sudo iptables -A FORWARD -i cni0 -o cni0 -j ACCEPT
+```
+
+```bash
+# flush all chains
+sudo iptables -F
+sudo iptables -t nat -F
+sudo iptables -t mangle -F
+# delete all chains
+sudo iptables -X
+
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -t nat -F
+sudo iptables -t mangle -F
+sudo iptables -F
+sudo iptables -X
 ```
 
 ## Install Kubernetes distribution
