@@ -1,0 +1,20 @@
+image:
+  repository: bitnami/spark
+  tag: 3.5.2-debian-12-r1
+master:
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi
+worker:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 1
+      memory: 1Gi

@@ -1,0 +1,10 @@
+version: 30.0.4
+app_version: 3.8.0
+listeners:
+  client:
+    protocol: 'PLAINTEXT'
+image:
+  repository: "bitnami/kafka"
+  tag: "3.8.0-debian-12-r3"
+controller:
+  replicaCount: 3
