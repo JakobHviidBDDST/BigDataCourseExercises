@@ -4,8 +4,8 @@ import time
 
 REDIS_CLUSTER_CLIENT_IMAGE = "docker.io/bitnami/redis-cluster:7.4.0-debian-12-r1"
 KAFKA_PATH = "../03/"
-HDFS_SERVICES_PATH = "../../services/hdfs"
-INTERACTIVE_DEPLOYMENT_PATH = "../../services/interactive/interactive.yaml"
+HDFS_SERVICES_PATH = "../../../services/hdfs"
+INTERACTIVE_DEPLOYMENT_PATH = "../../../services/interactive/interactive.yaml"
 TIME_TO_SLEEP = 3
 
 
