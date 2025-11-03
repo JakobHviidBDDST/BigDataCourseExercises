@@ -31,7 +31,7 @@ flowchart LR
 
 ## New Technologies
 
-The new technologies introduced this week are: **Hive, MongoDB, Redis**.
+The new technologies introduced this week are: **DataHub**.
 
 For some general quick start guidance on utilising the technologies, please view the archived exercises from [Lecture 07 E24](https://github.com/JakobHviidBDDST/BigDataCourseExercises/tree/main/archive/E24/07).
 
