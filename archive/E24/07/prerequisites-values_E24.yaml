@@ -48,25 +48,13 @@ neo4j:
 
 mysql:
   enabled: true
-  image:
-    registry: docker.io
-    repository: bitnamilegacy/mysql
-    tag: 8.0.32-debian-11-r26
   auth:
     existingSecret: mysql-secrets
 
-# Bitnami version of Kafka that deploys open source Kafka
+# Bitnami version of Kafka that deploys open source Kafka https://artifacthub.io/packages/helm/bitnami/kafka
 kafka:
   enabled: true
-  image:
-    registry: docker.io
-    repository: bitnamilegacy/kafka
-    tag: 3.8.0-debian-12-r3
   kraft:
     enabled: false
   zookeeper:
     enabled: true
-    image:
-      registry: docker.io
-      repository: bitnamilegacy/zookeeper
-      tag: 3.9.1-debian-12-r13
