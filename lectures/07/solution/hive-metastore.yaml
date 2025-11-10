@@ -189,7 +189,7 @@ spec:
           command: [ "/bin/sh", "-c" ]
           args:
             - |
-              until nc -z -v -w90 postgresql 5432; do
+              until nc -z -v -w90 postgresql-hive 5432; do
                 echo "Waiting for Hive Metastore DB to be ready..."
                 sleep 5
               done

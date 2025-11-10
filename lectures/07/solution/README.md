@@ -181,7 +181,7 @@ helm install postgresql-telemetry \
 Then we will go into an interactive shell with the Postgres deployment, add a telemetry table, and seed it with data.
 
 ```zsh
-kubectl exec -it postgresql-0  -- bash
+kubectl exec -it postgresql-telemetry-0  -- bash
 ```
 
 ```zsh
@@ -224,7 +224,7 @@ sqoop import \
 --m 1
 ```
 
-Then we can verify the contents of the `/telemetry` folder in HDFS with
+Then we can verify the contents of the `/old-telemetry` folder in HDFS with
 ```zsh
 hdfs dfs -fs hdfs://namenode:9000 -cat /old-telemetry/*
 ```
@@ -233,23 +233,17 @@ hdfs dfs -fs hdfs://namenode:9000 -cat /old-telemetry/*
 
 Now we need to create a Hive database and table that points to the data in HDFS. 
 
-First, port-forward the Hive service to your local machine:
+First we port-forward the Hive service:
 ```zsh
-kubectl port-forward svc/hive 10000:10000
+kubectl port-forward svc/hiveserver2 10000:10000
 ```
 
-Open **DBeaver** and create a new connection:
-
-1. **Database** → **New Database Connection**
-2. Select **Apache Hive**
-3. Configure connection:
-   - **Host**: `localhost`
-   - **Port**: `10000`
-   - **Database/Schema**: `default`
-   - **Authentication**: None
-   - **Username**: `root`
-
-4. Test the connection and click **Finish**
+Then we can use **DBeaver** to create a connection to Hive with these credisentials:
+- **Host**: `localhost`
+- **Port**: `10000`
+- **Database/Schema**: `default`
+- **Authentication**: None
+- **Username**: `root`
 
 Once connected, run the following SQL queries in DBeaver:
 
@@ -274,3 +268,5 @@ Verify the table was created and data is accessible:
 ```sql
 SELECT * FROM telemetry_db.telemetry;
 ```
+
+### Collecting the metadata with Datahub
