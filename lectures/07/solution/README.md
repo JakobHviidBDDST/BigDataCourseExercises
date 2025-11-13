@@ -37,7 +37,7 @@ As the data architect and engineer, you will design and build a prototype of thi
 
 This is largely based on the architecutre from lecture 03, where I have put the focus on using Datahub for Postgres and for Hive.
 
-Ideally I would use Kafka, but the Kafka ingestion is broken due to a change in Confluent Kafka's dependencies needing httpx, this can most likely be fixed by using newer Datahub versions or custom images, in case you want to use Kafka with Datahub for your project.
+NOTE: Ideally I would use Kafka, but the Kafka ingestion is broken due to a change in Confluent Kafka's dependencies needing httpx, this can most likely be fixed by using newer Datahub versions or custom images, in case you want to use Kafka with Datahub for your project.
 
 ## Deployment of technologies
 
@@ -260,6 +260,8 @@ CREATE TABLE telemetry_db.telemetry (
   name STRING,
   wattage INT
 )
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
 LOCATION 'hdfs://namenode:9000/old-telemetry';
 ```
@@ -270,3 +272,39 @@ SELECT * FROM telemetry_db.telemetry;
 ```
 
 ### Collecting the metadata with Datahub
+
+Now we must set up two new ingestions in Datahub:
+1. Postgres
+    - First create secret for the password `pwd1234`
+
+    Then create the connection:
+    ```yaml
+      host_port: postgresql-telemetry:5432
+      database: telemetry
+      username: root
+      password: pwd1234
+    ```
+
+2. Hive
+    - Hive is a bit simpler to set up:
+    ```yaml
+      host_port: hiveserver2:10000
+      database: telemetry_db
+    ```
+
+Once these have finished running (might take a while the first time) they should both report back as **Succeeded**
+
+We can now go to the Datahub frontpage and view these dataasets.
+
+We will manually be linking the *upstream* of the Hive dataset to Postgres to link the data.
+
+We can also verify that the schemas are identical, via the Datahub platform.
+
+#### Organizing metadata and Data Governance
+
+Datahub is very powerful, we can:
+- create domains, glossary terms, tags, etc. and connect these to our datasets. 
+- add documentation for specific steps.
+- define owners of data
+
+See the video guide for a walkthrough of most of these.
