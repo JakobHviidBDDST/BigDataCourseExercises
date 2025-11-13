@@ -1,0 +1,471 @@
+# Configuration values for the DataHub Helm chart: https://github.com/acryldata/datahub-helm/blob/master/charts/datahub/values.yaml
+datahub-gms:
+  enabled: true
+  image:
+    repository: linkedin/datahub-gms
+  service:
+    type: ClusterIP
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 1Gi
+  livenessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    failureThreshold: 8
+  readinessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 30
+    failureThreshold: 8
+
+datahub-frontend:
+  enabled: true
+  image:
+    repository: linkedin/datahub-frontend-react
+  service:
+    type: ClusterIP
+  resources:
+    limits:
+      memory: 1400Mi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  # Set up ingress to expose react front-end
+  ingress:
+    enabled: false
+  defaultUserCredentials: { }
+
+acryl-datahub-actions:
+  enabled: true
+  image:
+    repository: acryldata/datahub-actions
+    tag: "v0.0.11"
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi
+
+datahub-mae-consumer:
+  enabled: true
+  image:
+    repository: linkedin/datahub-mae-consumer
+  resources:
+    limits:
+      memory: 1536Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+datahub-mce-consumer:
+  enabled: true
+  image:
+    repository: linkedin/datahub-mce-consumer
+  resources:
+    limits:
+      memory: 1536Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+datahub-ingestion-cron:
+  enabled: false
+  image:
+    repository: acryldata/datahub-ingestion
+
+elasticsearchSetupJob:
+  enabled: true
+  image:
+    repository: linkedin/datahub-elasticsearch-setup
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi
+  extraInitContainers: [ ]
+  podSecurityContext:
+    fsGroup: 1000
+  securityContext:
+    runAsUser: 1000
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+  podAnnotations: { }
+  # Add extra sidecar containers to job pod
+  extraSidecars: [ ]
+
+kafkaSetupJob:
+  enabled: true
+  image:
+    repository: linkedin/datahub-kafka-setup
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 300m
+      memory: 768Mi
+  extraInitContainers: [ ]
+  podSecurityContext:
+    fsGroup: 1000
+  securityContext:
+    runAsUser: 1000
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+  podAnnotations: { }
+  # Add extra sidecar containers to job pod
+  extraSidecars: [ ]
+
+mysqlSetupJob:
+  enabled: true
+  image:
+    repository: acryldata/datahub-mysql-setup
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi
+  extraInitContainers: [ ]
+  podSecurityContext:
+    fsGroup: 1000
+  securityContext:
+    runAsUser: 1000
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+  podAnnotations: { }
+  extraSidecars: [ ]
+
+## No code data migration
+datahubUpgrade:
+  enabled: true
+  image:
+    repository: acryldata/datahub-upgrade
+  batchSize: 1000
+  batchDelayMs: 100
+  noCodeDataMigration:
+    sqlDbType: "MYSQL"
+  podSecurityContext: { } # fsGroup: 1000
+  securityContext: { } # runAsUser: 1000
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-2"
+    helm.sh/hook-delete-policy: before-hook-creation
+  podAnnotations: { }
+  # Add extra sidecar containers to job pod
+  extraSidecars: [ ]
+  cleanupJob:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 300m
+        memory: 256Mi
+    # Add extra sidecar containers to job pod
+    extraSidecars: [ ]
+  restoreIndices:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 300m
+        memory: 256Mi
+    # Add extra sidecar containers to job pod
+    extraSidecars: [ ]
+  extraInitContainers: [ ]
+
+## Runs system update processes
+## Includes: Elasticsearch Indices Creation/Reindex (See global.elasticsearch.index for additional configuration)
+datahubSystemUpdate:
+  image:
+    repository: acryldata/datahub-upgrade
+  podSecurityContext: { } # fsGroup: 1000
+  securityContext: { } # runAsUser: 1000
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-4"
+    helm.sh/hook-delete-policy: before-hook-creation
+  podAnnotations: { }
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 256Mi
+  # Add extra sidecar containers to job pod
+  extraSidecars: [ ]
+  extraInitContainers: [ ]
+
+global:
+  strict_mode: true
+  graph_service_impl: elasticsearch
+  datahub_analytics_enabled: true
+  datahub_standalone_consumers_enabled: false
+
+  elasticsearch:
+    host: "elasticsearch-master"
+    port: "9200"
+    skipcheck: "false"
+    insecure: "false"
+    useSSL: "false"
+    # If you want to specify index prefixes use indexPrefix
+    # indexPrefix: "dh"
+
+    ## The following section controls when and how reindexing of elasticsearch indices are performed
+    index:
+      ## Enable reindexing when mappings change based on the data model annotations
+      enableMappingsReindex: true
+
+      ## Enable reindexing when static index settings change.
+      ## Dynamic settings which do not require reindexing are not affected
+      ## Primarily this should be enabled when re-sharding is necessary for scaling/performance.
+      enableSettingsReindex: true
+
+      ## Index settings can be overridden for entity indices or other indices on an index by index basis
+      ## Some index settings, such as # of shards, requires reindexing while others, i.e. replicas, do not
+      ## Non-Entity indices do not require the prefix
+      # settingsOverrides: '{"graph_service_v1":{"number_of_shards":"5"},"system_metadata_service_v1":{"number_of_shards":"5"}}'
+      ## Entity indices do not require the prefix or suffix
+      # entitySettingsOverrides: '{"dataset":{"number_of_shards":"10"}}'
+
+      ## The amount of delay between indexing a document and having it returned in queries
+      ## Increasing this value can improve performance when ingesting large amounts of data
+      # refreshIntervalSeconds: 1
+
+      ## The following options control settings for datahub-upgrade job when creating or reindexing indices
+      upgrade:
+        ## When reindexing is required, this option will clone the existing index as a backup
+        ## The clone indices are not currently managed.
+        cloneIndices: true
+
+        ## Typically when reindexing the document counts between the original and destination indices should match.
+        ## In some cases reindexing might not be able to proceed due to incompatibilities between a document in the
+        ## original index and the new index's mappings. This document could be dropped and re-ingested or restored from
+        ## the SQL database.
+        ##
+        ## This setting allows continuing if and only if the cloneIndices setting is also enabled which
+        ## ensures a complete backup of the original index is preserved.
+        allowDocCountMismatch: false
+
+    ## Search related configuration
+    search:
+      ## Maximum terms in aggregations
+      maxTermBucketSize: 20
+
+      ## Configuration around exact matching for search
+      exactMatch:
+        ## if false will only apply weights, if true will exclude non-exact
+        exclusive: false
+        ## include prefix exact matches
+        withPrefix: true
+        ## boost multiplier when exact with case
+        exactFactor: 2.0
+        ## boost multiplier when exact prefix
+        prefixFactor: 1.6
+        ## stacked boost multiplier when case mismatch
+        caseSensitivityFactor: 0.7
+        ## enable exact match on structured search
+        enableStructured: true
+
+      ## Configuration for graph service dao
+      graph:
+        ## graph dao timeout seconds
+        timeoutSeconds: 50
+        ## graph dao batch size
+        batchSize: 1000
+        ## graph dao max result size
+        maxResult: 10000
+
+      custom:
+        enabled: false
+        # See documentation: https://datahubproject.io/docs/how/search/#customizing-search
+        config:
+          # Notes:
+          #
+          # First match wins
+          #
+          # queryRegex = Java regex syntax
+          #
+          # functionScores - See the following for function score syntax
+          # https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-function-score-query.html
+
+          queryConfigurations:
+            # Select *
+            - queryRegex: "[*]|"
+              simpleQuery: false
+              prefixMatchQuery: false
+              exactMatchQuery: false
+              boolQuery:
+                must_not:
+                  term:
+                    deprecated:
+                      value: true
+              functionScore:
+                functions:
+                  - filter:
+                      term:
+                        materialized:
+                          value: true
+                    weight: 0.8
+                score_mode: multiply
+                boost_mode: multiply
+
+            # Criteria for exact-match only
+            # Contains quoted or contains underscore then use exact match query
+            - queryRegex: >-
+                ["'].+["']|\S+_\S+
+              simpleQuery: false
+              prefixMatchQuery: true
+              exactMatchQuery: true
+              functionScore:
+                functions:
+                  - filter:
+                      term:
+                        materialized:
+                          value: true
+                    weight: 0.8
+                  - filter:
+                      term:
+                        deprecated:
+                          value: true
+                    weight: 0
+                score_mode: multiply
+                boost_mode: multiply
+            # default
+            - queryRegex: .*
+              simpleQuery: true
+              prefixMatchQuery: true
+              exactMatchQuery: true
+              boolQuery:
+                must_not:
+                  term:
+                    deprecated:
+                      value: true
+              functionScore:
+                functions:
+                  - filter:
+                      term:
+                        materialized:
+                          value: true
+                    weight: 0.8
+                score_mode: multiply
+                boost_mode: multiply
+
+  kafka:
+    bootstrap:
+      server: "prerequisites-kafka:9092"
+    zookeeper:
+      enabled: true
+      server: "prerequisites-zookeeper:2181"
+    # This section defines the names for the kafka topics that DataHub depends on, at a global level. Do not override this config
+    # at a sub-chart level.
+    topics:
+      metadata_change_event_name: "MetadataChangeEvent_v4"
+      failed_metadata_change_event_name: "FailedMetadataChangeEvent_v4"
+      metadata_audit_event_name: "MetadataAuditEvent_v4"
+      datahub_usage_event_name: "DataHubUsageEvent_v1"
+      metadata_change_proposal_topic_name: "MetadataChangeProposal_v1"
+      failed_metadata_change_proposal_topic_name: "FailedMetadataChangeProposal_v1"
+      metadata_change_log_versioned_topic_name: "MetadataChangeLog_Versioned_v1"
+      metadata_change_log_timeseries_topic_name: "MetadataChangeLog_Timeseries_v1"
+      platform_event_topic_name: "PlatformEvent_v1"
+      datahub_upgrade_history_topic_name: "DataHubUpgradeHistory_v1"
+    ## For production set this to a number larger than 1
+    # partitions: 3
+    # replicationFactor: 3
+    schemaregistry:
+      # GMS Implementation - `url` configured based on component context
+      type: INTERNAL
+      # Confluent Kafka Implementation
+      # type: KAFKA
+      # url: "http://prerequisites-cp-schema-registry:8081"
+
+  neo4j:
+    host: "prerequisites-neo4j:7474"
+    uri: "bolt://prerequisites-neo4j"
+    usernameFromSecret: neo4j-secrets
+    passwordFromSecret: neo4j-secrets
+
+  sql:
+    datasource:
+      host: "prerequisites-mysql:3306"
+      hostForMysqlClient: "prerequisites-mysql"
+      port: "3306"
+      url: "jdbc:mysql://prerequisites-mysql:3306/datahub?verifyServerCertificate=false&useSSL=true&useUnicode=yes&characterEncoding=UTF-8&enabledTLSProtocols=TLSv1.2"
+      driver: "com.mysql.cj.jdbc.Driver"
+      usernameFromSecret: mysql-secrets
+      passwordFromSecret: mysql-secrets
+
+  datahub:
+    version: v0.11.0
+    gms:
+      port: "8080"
+      nodePort: "30001"
+    monitoring:
+      enablePrometheus: true
+    mae_consumer:
+      port: "9091"
+      nodePort: "30002"
+    appVersion: "1.0"
+    systemUpdate:
+      enabled: true
+    encryptionKey:
+      secretRef: "datahub-encryption-secrets"
+      secretKey: "encryption_key_secret"
+      provisionSecret:
+        enabled: true
+        autoGenerate: true
+        annotations: { }
+    managed_ingestion:
+      enabled: true
+      defaultCliVersion: "0.11.0"
+    metadata_service_authentication:
+      enabled: false
+      systemClientId: "__datahub_system"
+      systemClientSecret:
+        secretRef: "datahub-auth-secrets"
+        secretKey: "system_client_secret"
+      tokenService:
+        signingKey:
+          secretRef: "datahub-auth-secrets"
+          secretKey: "token_service_signing_key"
+        salt:
+          secretRef: "datahub-auth-secrets"
+          secretKey: "token_service_salt"
+      provisionSecrets:
+        enabled: true
+        autoGenerate: true
+        annotations: { }
+    # Enables always emitting an MCL even when no changes are detected. Used for Time Based Lineage when no changes occur.
+    alwaysEmitChangeLog: false
+    # Enables diff mode for graph writes, uses a different code path that produces a diff from previous to next to write relationships instead of wholesale deleting edges and reading
+    enableGraphDiffMode: true
+    # Values specific to the unified search and browse feature.
+    search_and_browse:
+      show_search_v2: true # If on, show the new search filters experience as of v0.10.5
+      show_browse_v2: true # If on, show the new browse experience as of v0.10.5
+      backfill_browse_v2: true # If on, run the backfill upgrade job that generates default browse paths for relevant entities
