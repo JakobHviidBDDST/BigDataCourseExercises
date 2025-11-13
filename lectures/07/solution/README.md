@@ -238,12 +238,10 @@ First we port-forward the Hive service:
 kubectl port-forward svc/hiveserver2 10000:10000
 ```
 
-Then we can use **DBeaver** to create a connection to Hive with these credisentials:
-- **Host**: `localhost`
-- **Port**: `10000`
-- **Database/Schema**: `default`
-- **Authentication**: None
-- **Username**: `root`
+Then we can use **DBeaver** to create a connection to Hive with this URL:
+```zsh
+jdbc:hive2://localhost:10000
+```
 
 Once connected, run the following SQL queries in DBeaver:
 
