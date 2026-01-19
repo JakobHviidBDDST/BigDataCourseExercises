@@ -281,3 +281,30 @@ By default, a single node can only contain `110` pods. To increase the pod limit
     ````bash
     kubectl describe node <your-node-name> 
     ````
+
+
+## Create your own HostPath StorageClass
+
+
+>> Remember to enable hostpath-storage addon in Microk8s before proceeding.
+
+
+1. Apply the HostPath StorageClass manifest file [host-storage.yaml](host-storage.yaml).
+
+```bash
+microk8s kubectl apply -f host-storage.yaml
+```
+
+2. Set the new HostPath StorageClass as default
+
+```bash
+microk8s kubectl patch storageclass hostpath-custom \
+  -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+
+3. Set the Microk8s default StorageClass as non-default
+
+```bash
+microk8s kubectl patch storageclass microk8s-hostpath \
+  -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+```

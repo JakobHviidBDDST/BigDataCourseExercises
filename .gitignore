@@ -1,6 +1,7 @@
 .DS_Store
 .vscode/
 dev/
+.venv/
 .python-version
 *.ipynb
 .idea/
@@ -8,7 +9,8 @@ dev/
 
 infrastructure/*.txt
 infrastructure/tmp*/
-infrastructure/data/
+infrastructure/data/*.csv
+infrastructure/share_kubeconfigs/data/*.csv
 
 *.csr
 *.crt
