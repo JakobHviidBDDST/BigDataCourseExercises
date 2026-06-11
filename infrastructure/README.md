@@ -5,8 +5,8 @@ The main idea is that the students only have to install the `kubectl` client. Th
 ## Allow incoming TCP traffic to port 16443
 
 ```bash
-sudo iptables -A INPUT -p tcp --dport 16443 -s 10.X.0.0/12 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 443 -s 10.x.0.0/12 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 16443 -s 10.123.0.0/12 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -s 10.123.0.0/12 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 443 -s 10.152.183.1/12 -j ACCEPT
 sudo iptables -A FORWARD -i cni0 -o cni0 -j ACCEPT
 ```
@@ -60,9 +60,10 @@ helm3
 We will enable the following addons:
 
 ```bash
+microk8s enable hostpath-storage
 microk8s enable cert-manager
 microk8s enable rbac
-microk8s enable observability (Will also enable hostpath-storage and storage)
+microk8s enable observability
 ```
 
 ## Create workspace and service accounts for students
