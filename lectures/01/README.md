@@ -5,8 +5,7 @@
 ### Mathias Nicolajsen
 
 - 9th semester Software Engineering student
-- Startup:
-  - Aaveq Robotics [https://aaveqrobotics.com/](https://aaveqrobotics.com/)
+- My own Startup Aaveq Robotics [https://aaveqrobotics.com/](https://aaveqrobotics.com/)
 - LinkedIn [https://www.linkedin.com/in/mathias-nicolajsen/](https://www.linkedin.com/in/mathias-nicolajsen/)
 
 ### Oliver Møller
