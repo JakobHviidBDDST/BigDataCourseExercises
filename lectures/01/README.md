@@ -5,14 +5,15 @@
 ### Mathias Nicolajsen
 
 - 9th semester Software Engineering student
-- My own Startup Aaveq Robotics [https://aaveqrobotics.com/](https://aaveqrobotics.com/)
-- LinkedIn [https://www.linkedin.com/in/mathias-nicolajsen/](https://www.linkedin.com/in/mathias-nicolajsen/)
+- My own Startup [Aaveq Robotics](https://aaveqrobotics.com/)
+- [LinkedIn](https://www.linkedin.com/in/mathias-nicolajsen/)
 
 ### Oliver Møller
 
 - 9th semester Software Engineering student
-- Student-Worker at BankData [https://www.bankdata.dk/](https://www.bankdata.dk/)
-- LinkedIn [https://www.linkedin.com/in/oliver-riis-vestergaard-moeller/](https://www.linkedin.com/in/oliver-riis-vestergaard-moeller/)
+- Student-Worker at [BankData](https://www.bankdata.dk/) in Payment & Reporting
+- Previous startup founder
+- [LinkedIn](https://www.linkedin.com/in/oliver-riis-vestergaard-moeller/)
 
 
 ## Exercise lecture format
@@ -123,7 +124,7 @@ YouTube videos to watch to understand the important components of K8s
 The CLI tool used to communicate with a Kubernetes cluster from your localhost is called "kubectl". It is used though the terminal like `kubectl <command> <flags>`.
 You can read more about the CLI and how to install it here: [install kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl).
 
-> NOTICE! If you are on Windows we highly encourage you to use [scoop](https://scoop.sh) for painlessly installing the kubectl CLI.
+> NOTICE! If you are on Windows we highly encourage you to use [scoop](https://scoop.sh), as mentioned in the official guide, for painlessly installing the kubectl CLI.
 
 #### The kubeconfig file
 
@@ -136,7 +137,7 @@ The kubeconfig file contains the necessary information to connect to the cluster
 
 **Task**: Update the `~/.kube/config` file with the provided kubeconfig you received through your student mail.
 
-In order for you to access the cluster, you must be on the SDU WiFi or be using the SDU Cisco VPN. You can test whether your config works by running the following command:
+In order for you to access the cluster, **you must be connected to the on-premise SDU WiFi or using [SDU Cisco VPN](https://sdunet.dk/en/servicesider/it/support-og-loesninger/serveradgang)**. You can test whether your config works by running the following command:
 ```sh
 kubectl get nodes
 ```
