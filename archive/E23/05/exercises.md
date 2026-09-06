@@ -579,7 +579,7 @@ echo "<base64 password>" | base64 --decode
 We will now create an interactive container that will be used to connect to the redis cluster. Run the following command:
 
 ```text
-kubectl run redis-cluster-client --rm --tty -i --env REDIS_PASSWORD=<password> --image docker.io/bitnami/redis-cluster:7.2.1-debian-11-r0 -- bash
+kubectl run redis-cluster-client --rm --tty -i --env REDIS_PASSWORD=<password> --image docker.io/bitnamilegacy/redis-cluster:7.2.1-debian-11-r0 -- bash
 ```
 
 You can then use the following command inside of the interactive container to connect to the redis cluster using redis-cli:

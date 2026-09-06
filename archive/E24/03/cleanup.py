@@ -3,7 +3,7 @@ import platform
 import json
 import time
 
-KAFKA_CLIENT_IMAGE = "docker.io/bitnami/kafka:3.8.0-debian-12-r3"
+KAFKA_CLIENT_IMAGE = "docker.io/bitnamilegacy/kafka:3.8.0-debian-12-r3"
 PYTHON_IMAGE = "python"
 HDFS_SERVICES_PATH = "../../../services/hdfs"
 INTERACTIVE_DEPLOYMENT_PATH = "../../../services/interactive/interactive.yaml"

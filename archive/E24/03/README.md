@@ -28,10 +28,10 @@ helm install --values kafka-values.yaml kafka oci://registry-1.docker.io/bitnami
 
 **Tasks**: Producing and consuming topic messages
 
-1. Create a Kafka client pod (`docker.io/bitnami/kafka:3.8.0-debian-12-r3`) using `kubectl run`.
+1. Create a Kafka client pod (`docker.io/bitnamilegacy/kafka:3.8.0-debian-12-r3`) using `kubectl run`.
 
 ```bash
-kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.8.0-debian-12-r3  --command -- sleep infinity
+kubectl run kafka-client --restart='Never' --image docker.io/bitnamilegacy/kafka:3.8.0-debian-12-r3  --command -- sleep infinity
 ```
 
 2. Open two terminals and attach to the Kafka client pod using `kubectl exec` command.
