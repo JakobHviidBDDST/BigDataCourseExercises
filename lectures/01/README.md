@@ -11,7 +11,6 @@
 ### Oliver Møller
 
 - 9th semester Software Engineering student
-- Student-Worker at [BankData](https://www.bankdata.dk/) in Payment & Reporting
 - Previous startup founder
 - [LinkedIn](https://www.linkedin.com/in/oliver-riis-vestergaard-moeller/)
 
