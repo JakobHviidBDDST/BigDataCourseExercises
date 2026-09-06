@@ -615,7 +615,7 @@ We will now create an interactive container that will be used to connect to the 
 command:
 
 ```bash
-kubectl run redis-cluster-client --rm --tty -i --env REDIS_PASSWORD=$REDIS_PASSWORD --image docker.io/bitnami/redis-cluster:7.4.0-debian-12-r1 -- bash
+kubectl run redis-cluster-client --rm --tty -i --env REDIS_PASSWORD=$REDIS_PASSWORD --image docker.io/bitnamilegacy/redis-cluster:7.4.0-debian-12-r1 -- bash
 ```
 
 You can then use the following command inside the interactive container to connect to the redis cluster using redis-cli:

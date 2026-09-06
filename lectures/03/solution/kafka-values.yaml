@@ -4,7 +4,7 @@ listeners:
   client:
     protocol: 'PLAINTEXT'
 image:
-  repository: "bitnami/kafka"
+  repository: "bitnamilegacy/kafka"
   tag: "3.8.0-debian-12-r3"
 controller:
   replicaCount: 3

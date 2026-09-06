@@ -2,6 +2,7 @@
 .vscode/
 dev/
 .venv/
+venv/
 .python-version
 *.ipynb
 .idea/

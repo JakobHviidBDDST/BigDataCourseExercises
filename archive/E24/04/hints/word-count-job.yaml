@@ -7,19 +7,19 @@ data:
     import sys
     import os
     from operator import add
-    
+
     from utils import FS, SPARK_ENV, get_spark_context
-  
+
     if __name__ == "__main__":
       if len(sys.argv) != 2:
         print("Usage: wordcount <file>", file=sys.stderr)
         sys.exit(-1)
-      
+
       filename = sys.argv[1]
-      
+
       spark = get_spark_context(app_name="Word Count", config=SPARK_ENV.K8S)
       sc = spark.sparkContext
-      
+
       # Read file line by line
       lines = sc.textFile(f"{FS}{filename}")  # Read file from HDFS
       # Split each line at spaces (splits it into words)
@@ -30,22 +30,22 @@ data:
       sums = tuples.reduceByKey(add)
       # Sort the list of tuples by the second element (count) in descending order
       sorted = sums.sortBy(lambda x: x[1], ascending=False)
-      
+
       # Convert the sorted data to a DataFrame
       result_df = sorted.toDF(schema=["word", "count"])
-      
+
       # Save the result to a JSON file
       writer = result_df.write.mode("overwrite")
       writer.json(f"{FS}word-count.json")
-      
+
       # Take the first 10 elements of the list
       top_10 = sorted.take(10)
-      
+
       # Print the top 10 words and their counts
       print(f"Top 10 words in {filename} are:")
       for word, count in top_10:
         print("%s: %i" % (word, count))
-      
+
       spark.stop()
 
 
@@ -101,13 +101,13 @@ data:
         spark_conf = SparkConf().setAll(config.value).setAppName(app_name)
         spark = SparkSession.builder.config(conf=spark_conf).getOrCreate()
         sc = spark.sparkContext
-    
+
         sc.setLogLevel("DEBUG")
-    
+
         # Set the user programmatically
         java_import(sc._gateway.jvm, "org.apache.hadoop.security.UserGroupInformation")
         sc._gateway.jvm.UserGroupInformation.setLoginUser(sc._gateway.jvm.UserGroupInformation.createRemoteUser("root"))
-    
+
         return spark
 
   core-site.xml: |
@@ -169,7 +169,7 @@ spec:
     spec:
       containers:
         - name: spark-word-count
-          image: bitnami/spark:3.5.2-debian-12-r1
+          image: bitnamilegacy/spark:3.5.2-debian-12-r1
           command: [ "sh", "-c" ]
           args:
             - |

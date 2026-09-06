@@ -7,12 +7,11 @@ if [ -z "$1" ]; then
 fi
 
 SERVER_IP=$1
-# SERVER_IP="10.123.3.156"
 SERVER="https://${SERVER_IP}:16443"
 
 echo "Create kubeconfigs!"
 
 while read -r NAMESPACE
-do 
+do
   ./create-user.sh "$SERVER" "$NAMESPACE" "$NAMESPACE"
 done <users.txt
