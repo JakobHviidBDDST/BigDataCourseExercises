@@ -72,6 +72,13 @@ We will create a namespace, a service account, and a role for each namespace. Th
 
 The above-mentioned steps are automated in the script [create-user.sh](create-user.sh). The file [create-users.sh](create-users.sh) parses the file [users.txt](users.txt) which includes a list of students for which we want to create access for.
 
+The contents of the `users.txt` file should represent the first part of the users student mail. The following is an example of 3 students:
+```
+abcde12-personal
+bcdef34-personal
+cdefg56-personal
+```
+
 ### Step by step
 
 1. Ensure the students are listed in the file `users.txt`
