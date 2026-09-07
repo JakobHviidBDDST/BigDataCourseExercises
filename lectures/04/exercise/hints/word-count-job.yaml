@@ -1,0 +1,219 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: word-count-config
+data:
+  word-count.py: |
+    import sys
+    import os
+    from operator import add
+
+    from utils import FS, SPARK_ENV, get_spark_context
+
+    if __name__ == "__main__":
+      if len(sys.argv) != 2:
+        print("Usage: wordcount <file>", file=sys.stderr)
+        sys.exit(-1)
+
+      filename = sys.argv[1]
+
+      spark = get_spark_context(app_name="Word Count", config=SPARK_ENV.K8S)
+      sc = spark.sparkContext
+
+      # Read file line by line
+      lines = sc.textFile(f"{FS}{filename}")  # Read file from HDFS
+      # Split each line at spaces (splits it into words)
+      words = lines.flatMap(lambda x: x.split(" "))
+      # Map each word to a tuple (word, 1)
+      tuples = words.map(lambda x: (x, 1))
+      # Reduce tuples by key (word) which results in a list of tuples with unique words and their total counts
+      sums = tuples.reduceByKey(add)
+      # Sort the list of tuples by the second element (count) in descending order
+      sorted = sums.sortBy(lambda x: x[1], ascending=False)
+
+      # Convert the sorted data to a DataFrame
+      result_df = sorted.toDF(schema=["word", "count"])
+
+      # Save the result to a JSON file
+      writer = result_df.write.mode("overwrite")
+      writer.json(f"{FS}word-count.json")
+
+      # Take the first 10 elements of the list
+      top_10 = sorted.take(10)
+
+      # Print the top 10 words and their counts
+      print(f"Top 10 words in {filename} are:")
+      for word, count in top_10:
+        print("%s: %i" % (word, count))
+
+      spark.stop()
+
+
+  utils.py: |
+    """
+    This module contains utility functions for the Spark applications.
+    """
+
+    import locale
+    import os
+    import re
+    import subprocess
+    from enum import Enum
+
+    from pyspark import SparkConf
+    from pyspark.sql import SparkSession
+    from py4j.java_gateway import java_import
+
+    locale.getdefaultlocale()
+    locale.getpreferredencoding()
+
+    FS: str = "hdfs://namenode:9000/"
+    # Get the IP address of the host machine.
+    SPARK_DRIVER_HOST = (
+        subprocess.check_output(["hostname", "-i"]).decode(encoding="utf-8").strip()
+    )
+
+    SPARK_DRIVER_HOST = re.sub(rf"\s*127.0.0.1\s*", "", SPARK_DRIVER_HOST)
+    os.environ["SPARK_LOCAL_IP"] = SPARK_DRIVER_HOST
+
+    class SPARK_ENV(Enum):
+        LOCAL = [
+            ("spark.master", "local"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+        ]
+        K8S = [
+            ("spark.master", "spark://spark-master-svc:7077"),
+            ("spark.driver.bindAddress", "0.0.0.0"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+            ("spark.driver.port", "7077"),
+            ("spark.submit.deployMode", "client"),
+            # Disable Hadoop security
+            ("spark.kerberos.enabled", "false"),
+            ("spark.hadoop.security.authentication", "simple"),
+            ("spark.hadoop.security.authorization", "false"),
+            # Set HDFS settings
+            ("spark.hadoop.fs.defaultFS", "hdfs://namenode:9000"),
+            ("spark.hadoop.dfs.client.use.datanode.hostname", "true"),
+        ]
+
+    def get_spark_context(app_name: str, config: SPARK_ENV) -> SparkSession:
+        """Get a Spark context with the given configuration."""
+        spark_conf = SparkConf().setAll(config.value).setAppName(app_name)
+        spark = SparkSession.builder.config(conf=spark_conf).getOrCreate()
+        sc = spark.sparkContext
+
+        sc.setLogLevel("DEBUG")
+
+        # Set the user programmatically
+        java_import(sc._gateway.jvm, "org.apache.hadoop.security.UserGroupInformation")
+        sc._gateway.jvm.UserGroupInformation.setLoginUser(sc._gateway.jvm.UserGroupInformation.createRemoteUser("root"))
+
+        return spark
+
+  core-site.xml: |
+    <configuration>
+        <property>
+            <name>fs.defaultFS</name>
+            <value>hdfs://namenode:9000</value>
+        </property>
+        <property>
+            <name>hadoop.security.authentication</name>
+            <value>simple</value>
+        </property>
+        <property>
+            <name>hadoop.security.authorization</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>dfs.client.use.datanode.hostname</name>
+            <value>true</value>
+        </property>
+        <property>
+            <name>dfs.permissions</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>hadoop.http.staticuser.user</name>
+            <value>root</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.root.groups</name>
+            <value>*</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.root.hosts</name>
+            <value>*</value>
+        </property>
+        <property>
+            <name>hadoop.user.name</name>
+            <value>root</value>
+        </property>
+        <property>
+            <name>hadoop.user.group</name>
+            <value>supergroup</value>
+        </property>
+        <property>
+            <name>log4j.logger.org.apache.hadoop.security</name>
+            <value>DEBUG</value>
+        </property>
+    </configuration>
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: spark-word-count
+  labels:
+    app: spark-word-count
+spec:
+  template:
+    spec:
+      containers:
+        - name: spark-word-count
+          image: bitnamilegacy/spark:3.5.2-debian-12-r1
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              /opt/bitnami/spark/bin/spark-submit \
+              --master spark://spark-master-svc:7077 \
+              --conf spark.driver.extraJavaOptions=-Duser.home=/root \
+              --conf spark.hadoop.conf.dir=/opt/hadoop/etc/hadoop \
+              --conf spark.hadoop.security.authentication=simple \
+              --conf spark.hadoop.security.authorization=false \
+              --conf spark.hadoop.user.name=root \
+              /opt/bitnami/spark/examples/word-count.py alice-in-wonderland.txt
+          env:
+            - name: SPARK_LOCAL_DIRS
+              value: "/tmp/spark"
+            - name: SPARK_CONF_DIR
+              value: "/opt/bitnami/spark/conf"
+            - name: HOME
+              value: "/root"
+            - name: HADOOP_USER_NAME
+              value: "root"
+            - name: HADOOP_OPTS
+              value: "-Djava.security.krb5.conf=/dev/null"
+            - name: SPARK_JAVA_OPTS
+              value: "-Djava.security.debug=all"
+            - name: HADOOP_CONF_DIR
+              value: "/opt/hadoop/etc/hadoop"
+          volumeMounts:
+            - name: hadoop-config
+              mountPath: /opt/hadoop/etc/hadoop
+            - name: pi-scripts
+              mountPath: /opt/bitnami/spark/examples
+            - name: ivy-cache
+              mountPath: /root/.ivy2
+      volumes:
+        - name: hadoop-config
+          configMap:
+            name: word-count-config
+            items:
+              - key: core-site.xml
+                path: core-site.xml
+        - name: pi-scripts
+          configMap:
+            name: word-count-config
+        - name: ivy-cache
+          emptyDir: { }
+      restartPolicy: Never
+  backoffLimit: 2

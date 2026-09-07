@@ -1,0 +1,212 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: avg-modalities-config
+data:
+  avg-modalities.py: |
+    from pyspark.sql import functions as F
+    from pyspark.sql import types as T
+    from utils import FS, SPARK_ENV, get_spark_context
+
+    if __name__ == "__main__":
+      spark = get_spark_context(app_name="Sample Sum", config=SPARK_ENV.K8S)
+      sc = spark.sparkContext
+      files = sc.wholeTextFiles(f"{FS}/topics/INGESTION/*/*.json")
+
+      json_schema = T.StructType([
+        T.StructField("correlation_id", T.StringType(), False),
+        T.StructField("created_at", T.StringType(), False),
+        T.StructField("payload", T.StringType(), False),
+        T.StructField("schema_version", T.LongType(), False),
+      ])
+
+      payload_schema = T.StructType([
+        T.StructField("sensor_id", T.LongType(), False),
+        T.StructField("modality", T.FloatType(), False),
+        T.StructField("unit", T.StringType(), False),
+        T.StructField("temporal_aspect", T.StringType(), False),
+      ])
+
+      # parse the json files and create a dataframe with schema
+      df = spark.read.json(files.values(), schema=json_schema)
+      df = df.withColumn("payload", F.from_json("payload", payload_schema))
+
+      print(df.printSchema())
+      print(df.show())
+
+      df_gr = df.groupBy("payload.sensor_id").agg(
+        F.avg("payload.modality").alias("avg_modality")
+      )
+      print(df_gr.show())
+
+      spark.stop()
+
+
+  utils.py: |
+    """
+    This module contains utility functions for the Spark applications.
+    """
+
+    import locale
+    import os
+    import re
+    import subprocess
+    from enum import Enum
+
+    from pyspark import SparkConf
+    from pyspark.sql import SparkSession
+    from py4j.java_gateway import java_import
+
+    locale.getdefaultlocale()
+    locale.getpreferredencoding()
+
+    FS: str = "hdfs://namenode:9000/"
+    # Get the IP address of the host machine.
+    SPARK_DRIVER_HOST = (
+        subprocess.check_output(["hostname", "-i"]).decode(encoding="utf-8").strip()
+    )
+
+    SPARK_DRIVER_HOST = re.sub(rf"\s*127.0.0.1\s*", "", SPARK_DRIVER_HOST)
+    os.environ["SPARK_LOCAL_IP"] = SPARK_DRIVER_HOST
+
+    class SPARK_ENV(Enum):
+        LOCAL = [
+            ("spark.master", "local"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+        ]
+        K8S = [
+            ("spark.master", "spark://spark-master-svc:7077"),
+            ("spark.driver.bindAddress", "0.0.0.0"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+            ("spark.driver.port", "7077"),
+            ("spark.submit.deployMode", "client"),
+            # Disable Hadoop security
+            ("spark.kerberos.enabled", "false"),
+            ("spark.hadoop.security.authentication", "simple"),
+            ("spark.hadoop.security.authorization", "false"),
+            # Set HDFS settings
+            ("spark.hadoop.fs.defaultFS", "hdfs://namenode:9000"),
+            ("spark.hadoop.dfs.client.use.datanode.hostname", "true"),
+        ]
+
+    def get_spark_context(app_name: str, config: SPARK_ENV) -> SparkSession:
+        """Get a Spark context with the given configuration."""
+        spark_conf = SparkConf().setAll(config.value).setAppName(app_name)
+        spark = SparkSession.builder.config(conf=spark_conf).getOrCreate()
+        sc = spark.sparkContext
+
+        sc.setLogLevel("DEBUG")
+
+        # Set the user programmatically
+        java_import(sc._gateway.jvm, "org.apache.hadoop.security.UserGroupInformation")
+        sc._gateway.jvm.UserGroupInformation.setLoginUser(sc._gateway.jvm.UserGroupInformation.createRemoteUser("root"))
+
+        return spark
+
+  core-site.xml: |
+    <configuration>
+        <property>
+            <name>fs.defaultFS</name>
+            <value>hdfs://namenode:9000</value>
+        </property>
+        <property>
+            <name>hadoop.security.authentication</name>
+            <value>simple</value>
+        </property>
+        <property>
+            <name>hadoop.security.authorization</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>dfs.client.use.datanode.hostname</name>
+            <value>true</value>
+        </property>
+        <property>
+            <name>dfs.permissions</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>hadoop.http.staticuser.user</name>
+            <value>root</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.root.groups</name>
+            <value>*</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.root.hosts</name>
+            <value>*</value>
+        </property>
+        <property>
+            <name>hadoop.user.name</name>
+            <value>root</value>
+        </property>
+        <property>
+            <name>hadoop.user.group</name>
+            <value>supergroup</value>
+        </property>
+        <property>
+            <name>log4j.logger.org.apache.hadoop.security</name>
+            <value>DEBUG</value>
+        </property>
+    </configuration>
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: avg-modalities
+  labels:
+    app: avg-modalities
+spec:
+  template:
+    spec:
+      containers:
+        - name: avg-modalities
+          image: bitnamilegacy/spark:3.5.2-debian-12-r1
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              /opt/bitnami/spark/bin/spark-submit \
+              --master spark://spark-master-svc:7077 \
+              --conf spark.driver.extraJavaOptions=-Duser.home=/root \
+              --conf spark.hadoop.conf.dir=/opt/hadoop/etc/hadoop \
+              --conf spark.hadoop.security.authentication=simple \
+              --conf spark.hadoop.security.authorization=false \
+              --conf spark.hadoop.user.name=root \
+              /opt/bitnami/spark/examples/avg-modalities.py
+          env:
+            - name: SPARK_LOCAL_DIRS
+              value: "/tmp/spark"
+            - name: SPARK_CONF_DIR
+              value: "/opt/bitnami/spark/conf"
+            - name: HOME
+              value: "/root"
+            - name: HADOOP_USER_NAME
+              value: "root"
+            - name: HADOOP_OPTS
+              value: "-Djava.security.krb5.conf=/dev/null"
+            - name: SPARK_JAVA_OPTS
+              value: "-Djava.security.debug=all"
+            - name: HADOOP_CONF_DIR
+              value: "/opt/hadoop/etc/hadoop"
+          volumeMounts:
+            - name: hadoop-config
+              mountPath: /opt/hadoop/etc/hadoop
+            - name: pi-scripts
+              mountPath: /opt/bitnami/spark/examples
+            - name: ivy-cache
+              mountPath: /root/.ivy2
+      volumes:
+        - name: hadoop-config
+          configMap:
+            name: avg-modalities-config
+            items:
+              - key: core-site.xml
+                path: core-site.xml
+        - name: pi-scripts
+          configMap:
+            name: avg-modalities-config
+        - name: ivy-cache
+          emptyDir: { }
+      restartPolicy: Never
+  backoffLimit: 2

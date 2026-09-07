@@ -1,0 +1,21 @@
+{
+  "name": "mongodb-sink",
+  "config": {
+    "connection.password": "password",
+    "connection.uri": "mongodb://admin:password@mongodb:27017",
+    "connection.url": "mongodb://mongodb:27017",
+    "connection.username": "admin",
+    "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
+    "database": "kafka",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "key.converter.schemas.enable": "true",
+    "output.format.key": "json",
+    "output.format.value": "json",
+    "post.processor.chain": "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder",
+    "tasks.max": "4",
+    "timeseries.timefield.auto.convert": "false",
+    "topics": "INGESTION",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter.schemas.enable": "true"
+  }
+}

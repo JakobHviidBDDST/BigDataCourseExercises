@@ -1,7 +1,13 @@
 # Lecture 03 - Distributed Transport and Streaming
 
-This week's exercises will use the case-based structure described in the general overview from Lecture 01's exercise. To summarize the process:
+The new technologies introduced this week are: **Kafka, Kafka Connect, KSQLDB, Flume, and Sqoop**.
 
+This week's exercise consists of two parts. First, practical exercises where you have to deploy the technologies you learned about today. Secondly, design a system based on a cased-based structure.
+
+## The Practical Exercise
+The practical exercises are located in [lectures/03/exercise/README.md](./exercise/README.md)
+
+## The Theoretical Exercise
 - You will be presented with a case that needs solving.
 - You must design the architecture you believe can solve this problem (use your preferred drawing tool, e.g., draw.io, Excalidraw, etc.).
   - Ideally, using the technologies covered in the course so far.
@@ -16,35 +22,25 @@ flowchart LR
     case@{ shape: doc, label: "Read the case" }
     arch@{ shape: docs, label: "Draw your proposed architecture for the case" }
     feedback@{ shape: note, label: "Get feedback on your architecture from the instructors" }
-    impl@{ shape: processes, label: "Implement architecture in Kubernetes" }
-    test@{ shape: process, label: "Test architecture" }
-
+    impl@{ shape: processes, label: "Implement architecture in Kubernetes and test it" }
     stop@{ shape: dbl-circ, label: "Done" }
 
+    start-->case-->arch-->feedback-->stop
 
-    start-->case-->arch-->impl-->test
-    arch-->feedback-->arch
-
-    test-->|"If not compliant with the requirements"|arch
-    test-->|"If compliant with the requirements"|stop
+    feedback-->arch
+    feedback-->|"optional"|impl-->stop
 ```
 
-## New Technologies
-
-The new technologies introduced this week are: **Kafka, Kafka Connect, KSQLDB, Flume, and Sqoop**.
-
-For some general quick start guidance on utilising the technologies, please view the archived exerises from [Lecture 03 E24](https://github.com/JakobHviidBDDST/BigDataCourseExercises/tree/main/archive/E24/03).
-
-## Case Description
+### Case Description
 
 PowerGrid Analytics LLC monitors an electric power grid, where they measure the wattage used. They obtain their data from multiple sources with different sample rates, each identified by a unique ID. They need to collect and store this data immediately.
 
-However, they already have large amounts of telemetry on the grid stored in a SQL-based database that needs to be integrated into a new system with continuous data streams.
+However, they already have large amounts of telemetry on the grid stored in a SQL-based database that needs to be integrated into a new system with continuous data streams.
 
 There are also rumors that some former employees have mountains of unorganized data stored outside their databases, which they claim is essential to the operation of the grid...👷🏽‍♂️
 
 
-### Solution Requirements
+#### Solution Requirements
 
 - The solution must ingest large amounts of data from multiple sources in real time.
 - The solution should be capable of ingesting structured database information. 
@@ -52,14 +48,14 @@ There are also rumors that some former employees have mountains of unorganized d
 - Streams should be routed and processed by sensor ID.
 - The solution must persist the data to a distributed filesystem.
 
-### Demonstrate
+#### Demonstrate
 
 - How to do live ingestion of data from multiple sources.
 - How to ingest structured data from a database.
 - How to transfer data from a stream processing platform to long-term distributed storage.
 - How to process and route streaming data in real-time.
 
-### Remember to
+#### Remember to
 
 - Identify bottlenecks.
 - Pick appropriate ingestion technologies.

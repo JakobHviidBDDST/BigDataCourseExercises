@@ -1,0 +1,4 @@
+hdfs
+fastavro
+pyarrow
+pandas
