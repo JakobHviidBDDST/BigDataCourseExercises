@@ -8,7 +8,7 @@ We will be using the following Docker images for the HDFS cluster:
 ## Installation
 
 The following steps will guide you through the installation of an HDFS cluster on Kubernetes.
-Before proceeding, make sure you have a Kubernetes cluster running and `kubectl` is configured to use the cluste and familiarize yourself with the following resoruce files:
+Before proceeding, make sure you have a Kubernetes cluster running and `kubectl` configured to use the cluster and familiarize yourself with the following resoruce files:
 
 - [configmap.yaml](./configmap.yaml)
 - [datanodes.yaml](./datanodes.yaml)
@@ -62,12 +62,14 @@ Create a connection to namenode pod using port-forwarding as below:
 kubectl port-forward svc/namenode 9870:9870
 ```
 
-We expect the HDFS cluster to be empty once installed. The following cmd will used for accessing the content of the root directory in HDFS by the namenode pod. 
+We expect the HDFS cluster to be empty once installed. The following command shows the root directory in HDFS by the namenode pod.
 
 ```bash
 curl -s -XGET "http://localhost:9870/webhdfs/v1/?op=LISTSTATUS"
+```
 
-
+It should return the following:
+```json
 {
     "FileStatuses": {
         "FileStatus": [

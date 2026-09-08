@@ -59,11 +59,6 @@ on. The full command to list files in the root directory would be `hdfs dfs -fs 
 Furthermore, you may need to use the `root` user when interacting with the HDFS cluster. This can be done by setting an
 environment variable for the current shell session: `export HADOOP_USER_NAME=root`.
 
-**Tasks**:
-
-1. Use the command `hdfs dfs -ls /`. What does it tell you?
-2. Compare the output to `ls -laL /`
-
 **Task**: Try to list the files inside the root directory in the HDFS cluster.
 **Validate**: Verify there are no files in the root directory. The following exercises will be about creating files,
 reading files, uploading files, and deleting files in HDFS. The HDFS CLI tool is used for this.
@@ -311,11 +306,9 @@ You have the role of a data engineer and are required to store the samples from 
 <details>
   <summary><strong>Hint:</strong> Code example(s)</summary>
 
-You are able to find code snippets inside [`data-source.ipynb`](./data-source.ipynb) if you need suggestions and
+You are able to find code snippets inside [`hints/data-source.py`](./hints/data-source.py) if you need suggestions and
 directions for building the components of the fictive data sources.
 It is now up to you to take the components and gue them together in the [`data-source.py`](./data-source.py) file.
-
-**Discord:** Ask questions on Discord if you are not in class.
 
 **NB:** Use an interactive container for the development.
 
