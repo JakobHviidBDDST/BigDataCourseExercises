@@ -1,12 +1,18 @@
 # Lecture 07 - Metadata, Data Provenance and Data Mesh
 
-This week's exercises will follow the case-based structure explained in the overview from Lecture 01's exercise. To summarize the process:
+The new technologies introduced this week are: **DataHub**.
 
-- You will receive a case that needs solving.
-- You should design the architecture that you believe can solve this problem (use your preferred drawing tool, such as draw.io, Excalidraw, etc.).
-  - Ideally, use the technologies covered in the course so far.
-  - You will get feedback on your proposed architecture from the instructors.
-- Once you've drawn the architecture, try to assemble it using the chosen technologies and blueprints.
+This week's exercise consists of two parts. First, practical exercises where you have to deploy the technologies you learned about today. Secondly, design a system based on a cased-based structure.
+
+## The Practical Exercise
+The practical exercises are located in [lectures/07/exercise/README.md](./exercise/README.md)
+
+## The Theoretical Exercise
+- You will be presented with a case that needs solving.
+- You must design the architecture you believe can solve this problem (use your preferred drawing tool, e.g., draw.io, Excalidraw, etc.).
+  - Ideally, using the technologies covered in the course so far.
+  - You will receive feedback on your proposed architecture from the instructors.
+- Once the architecture has been drawn, try to assemble it using the selected technologies and blueprints.
 
 The process can be visualized as follows:
 
@@ -16,26 +22,16 @@ flowchart LR
     case@{ shape: doc, label: "Read the case" }
     arch@{ shape: docs, label: "Draw your proposed architecture for the case" }
     feedback@{ shape: note, label: "Get feedback on your architecture from the instructors" }
-    impl@{ shape: processes, label: "Implement architecture in Kubernetes" }
-    test@{ shape: process, label: "Test architecture" }
-
+    impl@{ shape: processes, label: "Implement architecture in Kubernetes and test it" }
     stop@{ shape: dbl-circ, label: "Done" }
 
+    start-->case-->arch-->feedback-->stop
 
-    start-->case-->arch-->impl-->test
-    arch-->feedback-->arch
-
-    test-->|"If not compliant with the requirements"|arch
-    test-->|"If compliant with the requirements"|stop
+    feedback-->arch
+    feedback-->|"optional"|impl-->stop
 ```
 
-## New Technologies
-
-The new technologies introduced this week are: **DataHub**.
-
-For some general quick start guidance on utilising the technologies, please view the archived exercises from [Lecture 07 E24](https://github.com/JakobHviidBDDST/BigDataCourseExercises/tree/main/archive/E24/07).
-
-## Case Description
+### Case Description
 
 PowerGrid Analytics LLC has listened to your valuable insights and feedback from previous tasks and has decided to further improve their data ecosystem.
 
@@ -43,7 +39,7 @@ They identified a critical missing element in their data ecosystem: metadata man
 
 Your task is to help them incorporate technology into their data governance architecture using **DataHub**, created by LinkedIn.
 
-### Solution Requirements
+#### Solution Requirements
 
 As the data architect and engineer, you will design and build a prototype of this ecosystem. You will:
 
@@ -52,12 +48,12 @@ As the data architect and engineer, you will design and build a prototype of thi
 - Configure the metadata catalog service to track schemas, lineage, versioning, quality metrics, access policies, and explore the API for serivce discovery.
 - Demonstrate consistency/provenance (e.g., between Hive and MongoDB results), cache misses, schema evolution, and metadata usage.
 
-### Demonstrate
+#### Demonstrate
 
 - How to organize metadata.
 - How to add ingestion sources like Kafka, Hive, MongoDB, or Redis.
 
-### Remember to
+#### Remember to
 
 - Identify bottlenecks.
 - Consider how scalability will be managed.

@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pi-estimation-config
+data:
+  pi-estimation.py: |
+    import sys
+    from operator import add
+    from random import random
+
+    from utils import SPARK_ENV, get_spark_context
+
+    if __name__ == "__main__":
+        """
+            Usage: pi [partitions]
+        """
+        spark = get_spark_context(app_name="Pi estimation", config=SPARK_ENV.K8S)
+        sc = spark.sparkContext
+
+        partitions = int(sys.argv[1]) if len(sys.argv) > 1 else 2
+        n = 1000000 * partitions
+
+        def f(_: int) -> float:
+            x = random() * 2 - 1
+            y = random() * 2 - 1
+            return 1 if x ** 2 + y ** 2 <= 1 else 0
+
+        count = sc.parallelize(range(1, n + 1), partitions).map(f).reduce(add)
+        print("Pi is roughly %f" % (4.0 * count / n))
+
+        spark.stop()
+
+  utils.py: |
+    """
+    This module contains utility functions for the Spark applications.
+    """
+
+    import locale
+    import os
+    import re
+    import subprocess
+    from enum import Enum
+
+    from pyspark import SparkConf
+    from pyspark.sql import SparkSession
+    from py4j.java_gateway import java_import
+
+    locale.getdefaultlocale()
+    locale.getpreferredencoding()
+
+    FS: str = "hdfs://namenode:9000/"
+    # Get the IP address of the host machine.
+    SPARK_DRIVER_HOST = (
+        subprocess.check_output(["hostname", "-i"]).decode(encoding="utf-8").strip()
+    )
+
+    SPARK_DRIVER_HOST = re.sub(rf"\s*127.0.0.1\s*", "", SPARK_DRIVER_HOST)
+    os.environ["SPARK_LOCAL_IP"] = SPARK_DRIVER_HOST
+
+    class SPARK_ENV(Enum):
+        LOCAL = [
+            ("spark.master", "local"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+        ]
+        K8S = [
+            ("spark.master", "spark://spark-master-svc:7077"),
+            ("spark.driver.bindAddress", "0.0.0.0"),
+            ("spark.driver.host", SPARK_DRIVER_HOST),
+            ("spark.driver.port", "7077"),
+            ("spark.submit.deployMode", "client"),
+            # Disable Hadoop security
+            ("spark.kerberos.enabled", "false"),
+            ("spark.hadoop.security.authentication", "simple"),
+            ("spark.hadoop.security.authorization", "false"),
+            # Set HDFS settings
+            ("spark.hadoop.fs.defaultFS", "hdfs://namenode:9000"),
+            ("spark.hadoop.dfs.client.use.datanode.hostname", "true"),
+        ]
+
+    def get_spark_context(app_name: str, config: SPARK_ENV) -> SparkSession:
+        """Get a Spark context with the given configuration."""
+        spark_conf = SparkConf().setAll(config.value).setAppName(app_name)
+        spark = SparkSession.builder.config(conf=spark_conf).getOrCreate()
+        sc = spark.sparkContext
+
+        sc.setLogLevel("DEBUG")
+
+        # Set the user programmatically
+        java_import(sc._gateway.jvm, "org.apache.hadoop.security.UserGroupInformation")
+        sc._gateway.jvm.UserGroupInformation.setLoginUser(sc._gateway.jvm.UserGroupInformation.createRemoteUser("root"))
+
+        return spark
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: spark-pi-estimation
+  labels:
+    app: spark-pi
+spec:
+  template:
+    spec:
+      containers:
+        - name: spark-pi-estimation
+          image: bitnamilegacy/spark:3.5.2-debian-12-r1
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              /opt/bitnami/spark/bin/spark-submit \
+                --master spark://spark-master-svc:7077 \
+                --conf spark.driver.extraJavaOptions=-Duser.home=/root \
+                /opt/bitnami/spark/examples/pi-estimation.py \
+                4;
+          env:
+            - name: SPARK_LOCAL_DIRS
+              value: "/tmp/spark"
+            - name: SPARK_CONF_DIR
+              value: "/opt/bitnami/spark/conf"
+            - name: HOME
+              value: "/root"
+          volumeMounts:
+            - name: pi-scripts
+              mountPath: /opt/bitnami/spark/examples
+            - name: ivy-cache
+              mountPath: /root/.ivy2
+      volumes:
+        - name: pi-scripts
+          configMap:
+            name: pi-estimation-config
+        - name: ivy-cache
+          emptyDir: { }
+      restartPolicy: Never
+  backoffLimit: 2

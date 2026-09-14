@@ -1,12 +1,18 @@
 # Lecture 04 - Spark
 
-This week's exercises will follow the case-based structure explained in the overview from Lecture 01's exercise. To summarize the process:
+The new technologies introduced this week are: **Spark, Spark SQL and Spark Streaming**.
 
-- You will receive a case that needs solving.
-- You should design the architecture that you believe can solve this problem (use your preferred drawing tool, such as draw.io, Excalidraw, etc.).
-  - Ideally, use the technologies covered in the course so far.
-  - You will get feedback on your proposed architecture from the instructors.
-- Once you've drawn the architecture, try to assemble it using the chosen technologies and blueprints.
+This week's exercise consists of two parts. First, practical exercises where you have to deploy the technologies you learned about today. Secondly, design a system based on a cased-based structure.
+
+## The Practical Exercise
+The practical exercises are located in [lectures/04/exercise/README.md](./exercise/README.md)
+
+## The Theoretical Exercise
+- You will be presented with a case that needs solving.
+- You must design the architecture you believe can solve this problem (use your preferred drawing tool, e.g., draw.io, Excalidraw, etc.).
+  - Ideally, using the technologies covered in the course so far.
+  - You will receive feedback on your proposed architecture from the instructors.
+- Once the architecture has been drawn, try to assemble it using the selected technologies and blueprints.
 
 The process can be visualized as follows:
 
@@ -16,26 +22,16 @@ flowchart LR
     case@{ shape: doc, label: "Read the case" }
     arch@{ shape: docs, label: "Draw your proposed architecture for the case" }
     feedback@{ shape: note, label: "Get feedback on your architecture from the instructors" }
-    impl@{ shape: processes, label: "Implement architecture in Kubernetes" }
-    test@{ shape: process, label: "Test architecture" }
-
+    impl@{ shape: processes, label: "Implement architecture in Kubernetes and test it" }
     stop@{ shape: dbl-circ, label: "Done" }
 
+    start-->case-->arch-->feedback-->stop
 
-    start-->case-->arch-->impl-->test
-    arch-->feedback-->arch
-
-    test-->|"If not compliant with the requirements"|arch
-    test-->|"If compliant with the requirements"|stop
+    feedback-->arch
+    feedback-->|"optional"|impl-->stop
 ```
 
-## New Technologies
-
-The new technologies introduced this week are: **Spark, Spark SQL and Spark Streaming**.
-
-For some general quick start guidance on utilising the technologies, please view the archived exercises from [Lecture 04 E24](https://github.com/JakobHviidBDDST/BigDataCourseExercises/tree/main/archive/E24/04).
-
-## Case Description
+### Case Description
 
 Remember PowerGrid Analytics LLC? Well, they definitely remember you! And they're back for more. After your previous excellent work, a *spark* has ignited during a C-suite meeting, and they've hired you again, this time to assist with distributed data processing!
 
@@ -45,20 +41,20 @@ Remember that unorganized employee data? Well, apparently those are quite long a
 
 Additionally, they want to perform some calculations with their wattage data that they measure. First, they want you to calculate the averages of the sample values of the wattage data stored in long-term storage. Second, they also want to do this live during ingestion, directly from the Kafka topic you are ingesting from!
 
-NB: Remember that the theme of today's exercises is **Spark**, if you find the case's goals hard to understand, have a look at the archived exercise ;)
+> Remember that the theme of today's exercises is **Spark**, if you find the case's goals hard to understand, have a look at the archived exercise ;)
 
-### Solution Requirements
+#### Solution Requirements
 
 - The solution must be able to analyze text files from long-term storage.
 - The solution must be able to find the average sample values of the data stored in long-term storage and the live data being ingested.
 
-### Demonstrate
+#### Demonstrate
 
 - How to analyze text files in long-term storage, and get the specific word counts.
 - How to find the average sample values of data in long-term storage.
 - How to find the average sample values of data from a topic in a streaming platform.
 
-### Remember to
+#### Remember to
 
 - Identify bottlenecks.
 - Consider how scalability will be managed.
