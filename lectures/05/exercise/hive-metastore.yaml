@@ -1,0 +1,229 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hive-metastore-config
+  labels:
+    app: hive-metastore
+data:
+  metastore-site.xml: |-
+    <configuration>
+        <!-- Hive Metastore configuration -->
+        <property>
+            <name>metastore.task.threads.always</name>
+            <value>org.apache.hadoop.hive.metastore.events.EventCleanerTask</value>
+        </property>
+        <property>
+            <name>metastore.expression.proxy</name>
+            <value>org.apache.hadoop.hive.metastore.DefaultPartitionExpressionProxy</value>
+        </property>
+        <property>
+            <name>metastore.storage.schema.reader.impl</name>
+            <value>org.apache.hadoop.hive.metastore.SerDeStorageSchemaReader</value>
+        </property>
+        <property>
+            <name>metastore.metastore.event.db.notification.api.auth</name>
+            <value>false</value>
+        </property>    
+        
+        <!-- Hive configuration -->
+        <property>
+            <name>hive.metastore.uris</name>
+            <value>thrift://hive-metastore:9083</value>
+        </property>
+        <property>
+            <name>datanucleus.autoCreateSchema</name>
+            <value>true</value>
+        </property>
+        <property>
+            <name>hive.metastore.schema.verification</name>
+            <value>true</value>
+        </property>
+        <property>
+            <name>hive.metastore.warehouse.dir</name>
+            <value>/user/hive/warehouse</value>
+            <description>Location of default database for the warehouse</description>
+        </property>
+        
+        <!-- PostgresSQL configuration -->
+        <property>
+            <name>javax.jdo.option.ConnectionURL</name>
+            <value>jdbc:postgresql://postgresql:5432/hive</value>
+        </property>
+        <property>
+            <name>javax.jdo.option.ConnectionDriverName</name>
+            <value>org.postgresql.Driver</value>
+        </property>
+        <property>
+            <name>javax.jdo.option.ConnectionUserName</name>
+            <value>root</value>
+        </property>
+        <property>
+            <name>javax.jdo.option.ConnectionPassword</name>
+            <value>pwd1234</value>
+        </property>
+        
+        <!-- Hadoop Configuration -->
+        <property>
+            <name>fs.defaultFS</name>
+            <value>hdfs://namenode:9000</value>
+        </property>
+        <property>
+            <name>hadoop.http.staticuser.user</name>
+            <value>root</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.hive.hosts</name>
+            <value>*</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.hive.groups</name>
+            <value>*</value>
+        </property>
+        <property>
+            <name>hadoop.proxyuser.hive.users</name>
+            <value>*</value>
+        </property>    
+        <property>
+            <name>dfs.client.use.datanode.hostname</name>
+            <value>true</value>
+        </property>
+        <property>
+            <name>dfs.replication</name>
+            <value>3</value>
+        </property>
+        
+        <!-- S3A Configuration
+        <property>
+            <name>fs.defaultFS</name>
+            <value>s3a://minio:9000</value>
+        </property>
+        <property>
+            <name>fs.s3a.connection.ssl.enabled</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>fs.s3a.impl</name>
+            <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+        </property>
+        <property>
+            <name>fs.s3a.endpoint</name>
+            <value>http://minio:9000</value>
+        </property>
+        <property>
+            <name>fs.s3a.access.key</name>
+            <value>admin</value>
+        </property>
+        <property>
+            <name>fs.s3a.secret.key</name>
+            <value>password</value>
+        </property>
+        <property>
+            <name>fs.s3a.path.style.access</name>
+            <value>true</value>
+        </property>
+        -->
+    </configuration>
+
+  metastore-log4j2.properties: |
+    # Define the root logger with a console appender
+     log4j.rootLogger = INFO, console
+    
+     # Console appender configuration
+     log4j.appender.console = org.apache.log4j.ConsoleAppender
+     log4j.appender.console.target = System.out
+     log4j.appender.console.layout = org.apache.log4j.PatternLayout
+     log4j.appender.console.layout.ConversionPattern = %d{ISO8601} [%t] %-5p %c{2} - %m%n
+    
+     # Set the logging level for specific categories
+     log4j.logger.org.apache.hadoop = WARN
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hive-metastore-entrypoint
+  labels:
+    app: hive-metastore
+data:
+  entrypoint.sh: |-
+    #!/bin/bash
+  
+    export HADOOP_VERSION=3.3.1
+    export METASTORE_VERSION=3.1.2
+    export AWS_SDK_VERSION=1.11.901
+    export LOG4J_VERSION=2.8.2
+    
+    export JAVA_HOME=/usr/local/openjdk-8
+    export HADOOP_HOME=/opt/hadoop-${HADOOP_VERSION}
+    export HADOOP_CLASSPATH=${HADOOP_HOME}/share/hadoop/tools/lib/aws-java-sdk-bundle-${AWS_SDK_VERSION}.jar:${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-aws-${HADOOP_VERSION}.jar:${HIVE_HOME}/lib/log4j-core-${LOG4J_VERSION}.jar:${HIVE_HOME}/lib/log4j-api-${LOG4J_VERSION}.jar:${HIVE_HOME}/lib/log4j-1.2-api-${LOG4J_VERSION}.jar:${HIVE_HOME}/lib/log4j-slf4j-impl-${LOG4J_VERSION}.jar
+    export HIVE_HOME=/opt/apache-hive-metastore-${METASTORE_VERSION}-bin
+    
+    # Check if schema exists
+    ${HIVE_HOME}/bin/schematool -dbType postgres -info
+  
+    if [ $? -eq 1 ]; then
+      echo "Getting schema info failed. Probably not initialized. Initializing..."
+      ${HIVE_HOME}/bin/schematool -dbType postgres -initSchema
+    fi
+  
+    ${HIVE_HOME}/bin/start-metastore
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hive-metastore
+  labels:
+    app: hive-metastore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hive-metastore
+  template:
+    metadata:
+      labels:
+        app: hive-metastore
+    spec:
+      initContainers:
+        - name: init-wait-db
+          image: busybox:latest
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              until nc -z -v -w90 postgresql 5432; do
+                echo "Waiting for Hive Metastore DB to be ready..."
+                sleep 5
+              done
+      containers:
+        - name: metastore
+          image: rtdl/hive-metastore:3.1.2
+          command: [ "bash", "entrypoint/entrypoint.sh" ]
+          ports:
+            - containerPort: 9083
+              name: thrift
+          volumeMounts:
+            - name: hive-config
+              mountPath: /opt/apache-hive-metastore-3.1.2-bin/conf
+            - name: entrypoint
+              mountPath: /opt/entrypoint
+      volumes:
+        - name: hive-config
+          configMap:
+            name: hive-metastore-config
+        - name: entrypoint
+          configMap:
+            name: hive-metastore-entrypoint
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hive-metastore
+  labels:
+    app: hive-metastore
+spec:
+  ports:
+    - name: thrift
+      port: 9083
+      targetPort: 9083
+      protocol: TCP
+  selector:
+    app: hive-metastore

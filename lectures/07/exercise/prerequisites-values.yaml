@@ -1,0 +1,72 @@
+# Configurations for the prerequisites: https://github.com/acryldata/datahub-helm/blob/master/charts/prerequisites/values.yaml
+elasticsearch:
+  enabled: true
+  # If you're running in production, set this to 3 and comment out antiAffinity below
+  replicas: 1
+  minimumMasterNodes: 1
+  # Set replicas to 1 and uncomment this to allow the instance to be scheduled on
+  # a master node when deploying on a single node Minikube / Kind / etc. cluster.
+  antiAffinity: "soft"
+  # If you are running a multi-replica cluster, comment this out
+  clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
+  # # Shrink default JVM heap.
+  esJavaOpts: "-Xmx384m -Xms384m"
+  # Allocate smaller chunks of memory per pod.
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "768M"
+    limits:
+      cpu: "1000m"
+      memory: "768M"
+
+neo4j:
+  enabled: true
+  nameOverride: neo4j
+  neo4j:
+    name: neo4j
+    edition: "community"
+    acceptLicenseAgreement: "yes"
+    defaultDatabase: "graph.db"
+    passwordFromSecret: neo4j-secrets
+  # Set security context for pod
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 7474
+    runAsGroup: 7474
+    fsGroup: 7474
+    fsGroupChangePolicy: "Always"
+  # Disallow privilegeEscalation on container level
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+  volumes:
+    data:
+      mode: "defaultStorageClass"
+      defaultStorageClass:
+        requests:
+          storage: 1Gi
+
+mysql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/mysql
+    tag: 8.0.32-debian-11-r26
+  auth:
+    existingSecret: mysql-secrets
+
+# Bitnami version of Kafka that deploys open source Kafka
+kafka:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kafka
+    tag: 3.8.0-debian-12-r3
+  kraft:
+    enabled: false
+  zookeeper:
+    enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/zookeeper
+      tag: 3.9.1-debian-12-r13
