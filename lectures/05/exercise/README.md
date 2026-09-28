@@ -24,6 +24,7 @@ Deploy postgres database.
 ```bash
 helm install postgresql \
   --version=12.1.5 \
+  --set image.repository=bitnamilegacy/postgresql \
   --set auth.username=root \
   --set auth.password=pwd1234 \
   --set auth.database=hive \
@@ -46,8 +47,8 @@ the [hive-metastore.yaml](./hive-metastore.yaml) file.
 ### Exercise 2 - Count words in Alice in Wonderland with Hive
 
 We will now analyze the Alice in Wonderland text similarly to what we did
-in [lecture 2 exercise 6-8](../02/README.md#exercise-7---analyzing-file-and-saving-result-in-json-format-using-python)
-and [lecture 4 exercise 3](../04/README.md#exercise-3---analyzing-files-using-spark-jobs) where we read the file from
+in [lecture 2 exercise 6-8](../../02/exercise/README.md#exercise-7---analyzing-file-and-saving-result-in-json-format-using-python)
+and [lecture 4 exercise 3](../../04/exercise/README.md#exercise-3---analyzing-files-using-spark-jobs) where we read the file from
 HDFS and counted words using Python and Spark respectively. But this time we will analyze the text using Hive.
 
 #### Upload file to HDFS
@@ -340,7 +341,7 @@ horizontal scalable.
 **Note**: We will deploy the minimum configuration for this database in order to reduce the resource footprint.
 
 This exercise is composed of three parts starting with a deployment of the MongoDB cluster. Then we would like to
-revisit Kafka Connect similar to [Exercise 06](./../03/README.md#exercise-7---kafka-connect-and-hdfs) from lecture 3.
+revisit Kafka Connect similar to [Exercise 7](../../03/exercise/README.md#exercise-7---kafka-connect-and-hdfs) from lecture 3.
 And finally we will look into querying JSON records in the database.
 
 The [mongodb.yaml](./mongodb.yaml) contains a complete manifest to compose a MongoDB cluster. The manifest includes the
@@ -451,18 +452,18 @@ The objective of this exercise is to configure a Kafka Connect connector that us
 MongoDB as a sink. Therefore, the exercise assumes you have records inside the `INGESTION` topic.
 
 **Task**: If the `INGESTION` topic is empty we recommend
-revisiting [Exercise 03](./../03/README.md#exercise-4---produce-messages-to-kafka-using-python) from lecture 3 and
+revisiting [Exercise 4](../../03/exercise/README.md#exercise-4---produce-messages-to-kafka-using-python) from lecture 3 and
 re-establish the Kafka produce to create new records.
 
 **Task**: Configure a Kafka Connect connector to move records from Kafka to MongoDB.
 
 **Hint:** This task can be solved with multiple approaches. Please start by revisiting the concept
-in [Exercise 06](./../03/README.md#exercise-7---kafka-connect-and-hdfs) from lecture 3.
+in [Exercise 7](../../03/exercise/README.md#exercise-7---kafka-connect-and-hdfs) from lecture 3.
 
 **Hint:** Then read the documentation
 here: [Configure the Sink Connector](https://www.mongodb.com/docs/kafka-connector/current/tutorials/sink-connector/#configure-the-sink-connector).
 The documentation suggests to post the configuration to the Kafka Connect REST API, which is similar to the approach
-in [Exercise 06](./../03/README.md#exercise-7---kafka-connect-and-hdfs).
+in [Exercise 7](../../03/exercise/README.md#exercise-7---kafka-connect-and-hdfs).
 
 **NB:** Remember to set up port-forwarding for the Kafka Connect REST API.
 
@@ -574,7 +575,7 @@ We will use the [Bitnami Redis Cluster helm chart](https://artifacthub.io/packag
 install the cluster, use the following command:
 
 ```bash
-helm install redis oci://registry-1.docker.io/bitnamicharts/redis-cluster --version 11.0.4
+helm install redis oci://registry-1.docker.io/bitnamicharts/redis-cluster --version 11.0.4 --set image.repository=bitnamilegacy/redis-cluster
 ```
 
 The Bitnami chart will create a random password stored in a Kubernetes secret. To get the password, use the following
