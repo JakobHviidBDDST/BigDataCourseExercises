@@ -93,7 +93,36 @@ cdefg56-personal
 
 ### Course project
 
-The setup of the projects will be utilizing same namespace and service account approach as mentioned above. Therefore, update the content of the [users.txt](users.txt) file and follow the three first steps as above. Use the following file [sent_msg_groups.py](./share_kubeconfigs/sent_msg_groups.py) to distribute the kubeconfig to each group member.
+The project setup utilizes the same namespace and service account approach as mentioned above, but with one namespace per project group instead of per student. The naming convention is `bd-gr-<id>` with the group id zero-padded to two digits (`bd-gr-01`, `bd-gr-02`, ...). This convention is relied upon by [sent_msg_groups.py](./share_kubeconfigs/sent_msg_groups.py), which matches the generated kubeconfigs (`bd-gr-NN-sa-bd-gr-NN-kubeconfig.yaml`) to the group `Id` in `project_groups.csv`.
+
+1. Write one line per group namespace to [users.txt](users.txt), e.g.:
+
+    ```
+    bd-gr-01
+    bd-gr-02
+    bd-gr-03
+    ```
+
+    Ensure the file ends with a trailing newline, otherwise the `while read` loop in [create-users.sh](create-users.sh) silently skips the last line.
+
+2. Run the creation on the cluster node and verify:
+
+    ```bash
+    ./create-users.sh "<IP>"
+    microk8s kubectl get ns | grep bd-gr
+    ls tmp/bd-gr-*-kubeconfig.yaml
+    ```
+
+3. Create the file `data/project_groups.csv` with two columns: `Id` (plain integer group id) and `student` (member usernames without the mail domain, joined by `, `):
+
+    ```csv
+    Id,student
+    1,"bagre23, bepet23, jomoe23, mikni23"
+    ```
+
+    If the groups were collected in a Microsoft Forms export, [parse_forms.py](parse_forms.py) generates this file as `./data/project_groups.csv`. Otherwise create it from the group assignments.
+
+4. Copy `tmp/` and `data/project_groups.csv` to where the mailer runs, configure `share_kubeconfigs/.env` (see [.env-sample](./share_kubeconfigs/.env-sample)), and distribute the kubeconfigs with [sent_msg_groups.py](./share_kubeconfigs/sent_msg_groups.py). The script asserts that the number of kubeconfig files equals the number of groups, and only prints the send plan by default (the `send_msg` call is commented out) - verify the printed plan, then uncomment to actually send.
 
 ## Share the kubeconfig file with the students
 
