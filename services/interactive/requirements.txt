@@ -5,3 +5,4 @@ pandas
 kafka-python-ng
 pyspark==3.5.2
 sentence-transformers>=3.0
+setuptools
