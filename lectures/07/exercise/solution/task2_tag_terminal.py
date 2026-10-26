@@ -60,9 +60,11 @@ TAG_SCHEMA = {
 SYSTEM_PROMPT = (
     "You are an expert SRE triage assistant. Classify the incident log provided "
     "by the user. Rules: source_service is the service that reports the problem "
-    "(the service that appears first in the logs); target_dependency is the "
-    "service or component it was calling or failing against, or 'none' if no "
-    "dependency is involved. Respond with JSON only."
+    "(the service named FIRST in the log). target_dependency is the SECOND service "
+    "named in the log - the dependency the source was calling or failing against. "
+    "Answer 'none' for target_dependency ONLY if the log names a single service; "
+    "if the log names two services, target_dependency MUST be the second one. "
+    "Respond with JSON only."
 )
 
 

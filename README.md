@@ -63,7 +63,7 @@ The repository will contain materials from previous semesters and the exercises 
 │           ├── msg.py
 │           └── students.py
 ├── lectures
-│   └── {01, 02, ..., 07}
+│   └── {01, 02, ..., 08}
 │       └── README.md
 ├── LICENSE
 ├── README.md

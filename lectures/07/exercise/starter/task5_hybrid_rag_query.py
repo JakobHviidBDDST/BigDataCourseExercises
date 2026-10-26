@@ -214,15 +214,18 @@ def build_prompt(question: str, context: list) -> list:
 
 def generate(llama_url: str, model: str, messages: list) -> tuple:
     """One generation call. Returns (answer, finish_reason)."""
-    payload = {"model": model, "messages": messages, "max_tokens": 320, "temperature": 0.0}
+    # 448: a concise root-cause answer fits, and it stays inside the slot
+    # window (--ctx-size / --parallel) even with the full hybrid context.
+    payload = {"model": model, "messages": messages, "max_tokens": 448, "temperature": 0.0}
     try:
         result = rest(llama_url.rstrip("/") + "/v1/chat/completions", "POST", payload)
         choice = result["choices"][0]
         answer = choice["message"]["content"]
         finish = choice.get("finish_reason")
         if finish == "length":
-            answer += ("\n[answer truncated at the server's context limit - raise "
-                       "--ctx-size in k8s/llama-cpp.yaml, or reduce --k/--graph-limit]")
+            answer += ("\n[answer cut off: hit max_tokens or the server's context "
+                       "window - raise --ctx-size in k8s/llama-cpp.yaml, or reduce "
+                       "--k/--graph-limit]")
         return answer, finish
     except urllib.error.HTTPError as exc:
         body = exc.read().decode(errors="replace")

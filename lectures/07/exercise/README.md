@@ -1,503 +1,225 @@
-# Lecture 07 - Metadata, Data Provenance and Data Mesh
+# Lecture 07 - Large Language Models and Scaling with Constrained Resources
 
-## DataHub Platform
-
-The objective of these exercises is to play with a metadata platform that enables data provenance and supports the
-concepts of the Data Mesh paradigm. The platform of choice for this course is called DataHub and has been built by Acryl
-Data and LinkedIn. They promote their platform by the following verbs:
-
-> "DataHub is an extensible metadata platform that enables data discovery, data observability and federated governance
-> to help tame the complexity of your data ecosystem." - [DataHub - [last seen 2023]](https://datahubproject.io)
-
-![DataHub Metadata Platform](https://datahubproject.io/assets/ideal-img/datahub-flow-diagram-light.5ce651b.1600.png)
-*Image borrowed by [DataHub](https://datahubproject.io)*.
-
-## Exercises
+The exercises for this week's lecture are about running Large Language Models and RAG pipelines on a CPU-only
+cluster. You will deploy a micro-LLM (<1B parameters) with llama.cpp, stream incidents through a
+Kafka → llama.cpp → HDFS pipeline, index them with PySpark + an Embedder into Qdrant, build a service-dependency
+graph, and finish with a hybrid Graph-RAG query.
 
 Please open issues [here](https://github.com/jakobhviid/BigDataCourseExercises/issues) if you encounter unclear
 information or experience bugs in our examples!
 
-> Before you start working on today's exercises you are strongly encouraged to clean up everything but the kafka
-> brokers (created in [lecture 3](../03/README.md#exercise-1---deploy-a-kafka-cluster)) in your Kubernetes namespace.
+## Prerequisites
 
-### Exercise 1 - Compose a DataHub Platform
+| Service | How to deploy | Endpoint used today |
+|---|---|---|
+| HDFS | `services/hdfs` (lecture 02) | `hdfs://namenode:9000` + WebHDFS `namenode:9870` |
+| Kafka + Kafka Connect + Schema Registry | Check lecture 3 exercise 1 | `kafka:9092`, `kafka-connect:8083`, `kafka-schema-registry:8081` |
+| Redpanda console | Check lecture 3 exercise 3 | `kubectl port-forward svc/redpanda 8080` |
+| Spark | Check lecture 04 exercise 1 | `spark://spark-master-svc:7077` |
 
-This exercise will compose a DataHub platform which you will use in the upcoming exercises. We recommend following the
-steps in this exercise and using the two included value files [prerequisites-values.yaml](prerequisites-values.yaml)
-and [values.yaml](values.yaml) for the helm installation processes. The following steps have been inspired by this
-guide [Deploying DataHub with Kubernetes](https://datahubproject.io/docs/deploy/kubernetes/).
 
-**Task**: Add the helm repository for DataHub by running the following command.
-
-```bash
-helm repo add datahub https://helm.datahubproject.io/
-```
-
-**Task**: Look into the [prerequisites-values.yaml](prerequisites-values.yaml) file and familiarize yourself with the
-four prerequisites components.
-
-DataHub is composed by four main components:
-
-- DataHub metadata service (known as GMS). A service written in Java consisting of multiple servlets:
-    - A public GraphQL API for fetching and mutating objects on the metadata graph.
-    - A general-purpose Rest API for ingesting the underlying storage models composing the Metadata graph.
-- Metadata audit event (known as MAE) consumer job. An optional component. Its main function is to listen to change log
-  events emitted as a result of changes made to the Metadata Graph, converting changes in the metadata model into
-  updates against secondary search & graph indexes (among other things).
-- Metadata Change Event (known as MCE) consumer job. An optional component. Its main function is to listen to change
-  proposal events emitted by clients of DataHub which request changes to the Metadata Graph. It then applies these
-  requests against DataHub's storage layer: the Metadata Service.
-- DataHub frontend is a Play service written in Java. It is served as a mid-tier between DataHub GMS which is the
-  backend service and DataHub Web.
-
-**Note**: *Text in above bullets have been copied
-from [DataHub Metadata Service](https://datahubproject.io/docs/metadata-service), [Metadata Audit Event Consumer Job](https://datahubproject.io/docs/metadata-jobs/mae-consumer-job), [Metadata Change Event Consumer Job](https://datahubproject.io/docs/metadata-jobs/mce-consumer-job), [DataHub Frontend Proxy](https://datahubproject.io/docs/datahub-frontend)
-respectively.*
-
-The main components are power by the following technologies:
-
-- **Kafka**
-- Local relational database: **MySQL**, Postgres, MariaDB
-- Search Index: **Elasticsearch**
-- Graph Index: **Neo4j** or Elasticsearch
-
-**Note**: The technologies in **bold** have been chosen for these exercises.
-
-**Task**: Create two secrets called `mysql-secrets` and `neo4j-secrets` in Kubernetes with the following values.
-
-- secret name: `mysql-secrets`
-    - field: `mysql-root-password` = `datahubdatahub`
-    - field: `mysql-username` = `root`
-- secret name: `neo4j-secrets`
-    - field: `neo4j-password` = `datahubdatahub`
-    - field: `neo4j-username` = `neo4j`
-    - field: `NEO4J_AUTH` = `neo4j/datahubdatahub`
-
-<details>
-<summary><strong>Hint:</strong> Create secrets in Kubernetes.</summary>
-
-Run the following two cmd's:
+When using an interactive pod, make sure to install the dependencies for this lab:
 
 ```bash
-kubectl create secret generic mysql-secrets --from-literal=mysql-root-password=datahubdatahub --from-literal=mysql-username=root
+pip install -r requirements.txt
 ```
+
+
+### Exercise 1 - Deploy a Micro-LLM using llama.cpp
+
+**Notice**: In a production Big Data or enterprise setting you would typically serve LLM inference with
+**vLLM**: continuous batching, paged KV-cache management and GPU-optimised kernels give far higher throughput
+at scale. Our cluster has no GPUs or dedicated AI accelerators - only shared CPU cores - so we use
+**llama.cpp** instead: one small server binary that runs a quantised GGUF model on plain CPU threads, which
+is plenty for this lab's 0.5B model. It exposes the same OpenAI-compatible API, so every script in this lab
+would work unchanged against a vLLM endpoint.
+
+**Task**: Deploy the llama.cpp server and wait until it is ready:
 
 ```bash
-kubectl create secret generic neo4j-secrets --from-literal=neo4j-password=datahubdatahub --from-literal=neo4j-username=neo4j --from-literal=NEO4J_AUTH=neo4j/datahubdatahub
+kubectl apply -f k8s/llama-cpp.yaml
 ```
 
-</details>
-
-**Task**: Deploy the three main components to power the DataHub platform with the name `prerequisites` using value
-file [`prerequisites-values.yaml`](./prerequisites-values.yaml) and schema version `0.1.13` using `helm`.
-
-<details>
-<summary><strong>Hint:</strong> Deploy prerequisites in Kubernetes.</summary>
-
-Run the following cmd:
+**Notice**: The model download plus CPU warmup takes around 5-10 minutes. You can check if the deployment is ready by running the following command:
 
 ```bash
-helm install prerequisites datahub/datahub-prerequisites --values prerequisites-values.yaml --version 0.1.13
+kubectl rollout status deploy/llama-cpp
 ```
 
-</details>
-
-**Note**: This may take several minutes. To keep track of the progress you can either run `kubectl get pods -w` in a
-secondary terminal session.
-
-**Task**: Deploy the DataHub platform with the name `datahub` using value file [`values.yaml`](./values.yaml) and schema
-version `0.4.27` using `helm`.
-
-<details>
-<summary><strong>Hint:</strong> Deploy datahub in Kubernetes.</summary>
-
-Run the following cmd:
+**Task**: After the pod is ready, you can verify the OpenAI-compatible API:
 
 ```bash
-helm install datahub datahub/datahub --values values.yaml --version 0.4.27
+kubectl port-forward svc/llama-cpp 8000
+curl http://127.0.0.1:8000/v1/models
 ```
 
-</details>
-
-**Note**: This may take several minutes. To keep track of the progress you can either run `kubectl get pods -w` in a
-secondary terminal session. It can happen that the datahub-nocode-migration-job-XXXXX pod(s) can run more than once
-because it cannot connect to `datahub-gms` so please wait for one of the pods to say `Completed`.
-
-**Task**: Clean up completed and possible failed pods.
-
-<details>
-<summary><strong>Hint:</strong> Identify pods and delete using a field selector in Kubernetes.</summary>
-
-The first chunk will list pods that state are either `Succeeded` or `Failed`.
+**Task**: Try and send a simple query to the LLM:
 
 ```bash
-kubectl get pods --field-selector=status.phase==Succeeded
-kubectl get pods --field-selector=status.phase==Failed
-kubectl get jobs --field-selector=status.successful=1
+curl http://127.0.0.1:8000/v1/chat/completions -H 'Content-Type: application/json' -d '{
+  "model": "qwen2.5-0.5b-instruct-q8_0.gguf",
+  "messages": [{"role": "user", "content": "In one sentence: what is a KV cache?"}],
+  "max_tokens": 64, "temperature": 0
+}'
 ```
 
-The second chunk will delete pods that state are either `Succeeded` or `Failed`.
+**Notice**: To swap the model, edit the `--hf-repo` and `--hf-file` args in [k8s/llama-cpp.yaml](./k8s/llama-cpp.yaml) and redeploy, e.g. `--hf-repo HuggingFaceTB/SmolLM2-360M-Instruct-GGUF` with `--hf-file smollm2-360m-instruct-q8_0.gguf`. The server downloads the GGUF file from Hugging Face on startup.
+
+
+### Exercise 2 - Tagging incidents from the terminal
+
+In this exercise you will use the LLM for giving tags to a set of fictional terminal incidents. The script [`starter/task2_tag_terminal.py`](./starter/task2_tag_terminal.py) handles the JSON schema of the terminal incients, but only uses a placeholder prompt. Your job will be to define this system prompt. The predefined terminal incidents can be found in [`data/sample_incidents.jsonl`](data/sample_incidents.jsonl).
+
+**Task**: Run the script as-is inside an interactive pod, with the placeholder prompt untouched, against the LLM and look at the tag table it prints:
 
 ```bash
-kubectl delete pod --field-selector=status.phase==Succeeded
-kubectl delete pod --field-selector=status.phase==Failed
-kubectl delete jobs --field-selector=status.successful=1
+python3 starter/task2_tag_terminal.py
 ```
 
-</details>
+You should see an output like this with 50 different incidents:
+```text
+ticket_id  category   severity  source_service     target_dependency
+INC-001    Network    MEDIUM    checkout-service   auth-service
+...
+```
 
-**Task**: Validate the MySQL database is running.
+**Task**: Write the `SYSTEM_PROMPT` (TODO 2.1 in [`starter/task2_tag_terminal.py`](./starter/task2_tag_terminal.py)). The schema enforces field names and enums, so your prompt must supply the semantics it cannot express:
 
-Steps:
+| Field | What your prompt has to define |
+|---|---|
+| `category` | what kind of problem belongs in `Network` / `Database` / `Auth` / `Deployment` / `Memory` |
+| `severity` | what deserves `LOW` vs `MEDIUM` vs `CRITICAL` |
+| `source_service` | the logs name many services, which one is the reporting one |
+| `target_dependency` | which one failed as a dependency - and when is `none` the right answer |
 
-1. Set up port-forwarding: `kubectl port-forward svc/prerequisites-mysql 3306`
-1. Connect to the MySQL database with your favorite editor.
-    - Host: `127.0.0.1`
-    - Port: `3306`
-    - User: `root` created in the secret: `mysql-secrets`
-    - Password: `datahubdatahub` created in the secret: `mysql-secrets`
-    - Database: `datahub`
-1. Once you connect there should be a table called `metadata_aspect_v2` in the `datahub` MySQL database.
+**Task**: Run the script again, and compare it with the initial run. Are the source_services correct now? Does the severify reflect what you would say is important? Remember that the LLM is very small and therefore might get a lot of it wrong if not helped.
 
-**Task**: Validate the frontend is running.
+**Task**: Try and run the [`solution/task2_tag_terminal.py`](./solution/task2_tag_terminal.py) file, and check its `SYSTEM_PROMPT` against yours. Did you miss something?
 
-Steps:
+### Exercise 3 - Streaming pipeline: Kafka → llama.cpp → Kafka → HDFS
 
-1. Set up port-forwarding: `kubectl port-forward svc/datahub-datahub-frontend 9002`
-1. Connect to the fronted [localhost:9002](http://localhost:9002).
-1. Once you connect you should be able to log in with:
-    - Username: `datahub`
-    - Password: `datahub`
+**Task**: Make sure Kafka and HDFS are running within your namespace.
 
-### Exercise 2 - Organizing metadata
+**Task**: Create two topics in the Redpanda console: `raw-incidents` and `enriched-incidents` (1 partition, replication factor 1).
 
-The importance of organizing the metadata of the data sources has a direct impact on the usability of the platform. To
-master the metadata of the data sources need to talk about three components; domains, business glossary, and tags.
+**Task**: Run the producer, then the enricher:
 
-- **Domains** are collections of related data assets associated with a specific part of your organization, such as the
-  Marketing department. Get a further explanation of domains in DataHub [here](https://datahubproject.io/docs/domains/).
-- **Business glossary** can organize data assets using a shared vocabulary. The glossaries provide a framework for
-  defining a standardized set of data concepts and then associating them with the physical assets that exist within your
-  data ecosystem. Get a further explanation of the business glossary in
-  DataHub [here](https://datahubproject.io/docs/glossary/business-glossary).
-- **Tags** are also useful for organizing metadata, but there is not a strict policy on how to use them. They can be
-  used to e.g. add versioning to an entity, or whether an entity is a legacy and to classify the several environments
-  data assets can live in. Get a further explanation on tags in DataHub [here](https://datahubproject.io/docs/tags).
+```bash
+python3 starter/task3_produce_raw.py            # publishes 50 tickets to raw-incidents
+python3 starter/task3_kafka_llama_enricher.py   # tags every ticket and publishes it to enriched-incidents
+```
 
-**Task**: Login to the [frontend](http://localhost:9002) and play around in the UI.
+Watch the `enriched-incidents` topic in Redpanda for the tickets with tags applied. Eeach output event is a record from the `raw-incidents` plus an `"llm"` object containing the same tags as in the previous exercise.
 
-**Task**: Create your glossary terms with the UI.
+**Notice**: The consumer settings in the enricher (`max_poll_records=4`, 5 minute poll interval, manual
+commits) are deliberate because CPU inference is slow. With GPU processing this value could easily be increased.
 
-1. A new domain that reflects the part of the organization you are interested in. E.g. `Engineering`.
-1. A new business glossary term group. E.g. `RD`.
-1. Append two terms in your newly created term group (`RD`) called `experiments` and `results`.
-1. Hereafter create one new term group (`analysis`) that inherits from the `RD` term group. How do you expect `analysis`
-   will fit in the hierarchy?
+**Task**: Register the pre-configured Kafka Connect HDFS sink:
 
-**Hint**: Watch this short session [DataHub 201: Business Glossary](https://youtu.be/pl9zx0CtdiU?si=1JLSC0C5uD7pOth2) on
-YouTube to get a different explanation on this concept.
+```bash
+kubectl port-forward svc/kafka-connect 8083
+curl -X POST http://127.0.0.1:8083/connectors \
+  -H 'Content-Type: application/json' \
+  -d @solution/hdfs-sink-enriched.json
+```
 
-**Task**: BONUS: Create the same glossary terms in a yaml file.
+**Task**: Verify the sink wrote to HDFS and check the connector consumer lag in Redpanda:
 
-**Note**: A solution for this exercise is all yours! However, it is important to state that this method enables version
-control - which all of us prefer!
+```bash
+hdfs dfs -fs hdfs://namenode:9000 -ls -R /topics/enriched-incidents
+```
 
-**Hint**: [GitHub: datahub/metadata-ingestion/examples/bootstrap_data/business_glossary.yml](https://github.com/datahub-project/datahub/blob/master/metadata-ingestion/examples/bootstrap_data/business_glossary.yml)
+**Task**: Try and kill the enricher with `Ctrl-C` while it is processing and restart it. What lands on the output
+topic this time, and why?
 
-### Exercise 3 - Checkout analytics overview in the UI
+**Hint**: Is any of the data duplicated?
 
-The DataHub platform comes with a nice analytics overview page. Navigate
-to [localhost:9002/analytics](http://localhost:9002/analytics).
-Here we can obtain an overview of the usage of the platform and various other statistics.
+### Exercise 4 - Scalable RAG indexing: Embedders into Qdrant + a Graph
 
-**Task**: Play around in the Analytics UI.
+**Task**: Deploy the vector database:
 
-- What do see?
+```bash
+kubectl apply -f k8s/qdrant.yaml
+kubectl port-forward svc/qdrant 6333    # dashboard: http://127.0.0.1:6333/dashboard
+```
 
-**Task**: Find metrics for your newly added Domain.
+**Task**: To access the qdrang dashboard, open http://127.0.0.1:6333/dashboard after you have port-forwarded the service.
 
-- Filter "Data Landscape Summary" to only include the `Engineering` domain and report the "Section Views across Entity
-  Types" metrics to rest of the project group.
+**Task**: The indexer `starter/task4_spark_rag_indexer.py` is complete and runs as given. It reads the JSON files from the HDFS sink, embeds every incident's `raw_text` with a small bi-encoder inside Spark (`mapInPandas`), upserts 384-dimensional points into the Qdrant collection `incidents`, and writes the service-dependency tables (`vertices`, `edges`) as Parquet to `hdfs:///graph/services/`. Read the docstring before running it as it explains why an embedder is used instead of the chat model.
 
-### Exercise 4 - Add a Kafka ingestion source
+**Notice**: The embedding is computed with the bi-encoder inside the Spark job, not with the llama.cpp chat model from Exercise 1 (the job docstring explains why).
 
-We will now create an Ingestion source for a Kafka cluster.
-An ingestion source tells DataHub how to connect to a service and allows DataHub to collect metadata from the service.
-In the case of a given Kafka cluster, DataHub is collecting topic names. The DataHub platform can collect information
-about the record schema from a schema registry service. This is recommended if you are using the Avro file format for
-the records in the topics.
+**Task**: Prepare the Spark Workers to work with the Python scripts by running the following shell script:
 
-**Note**: We are not using schema registry for this exercise session.
+```bash
+bash ./k8s/install_packages_on_spark_workers.sh
+```
 
-**Task**: Use the internal Kafka Cluster or create a Kafka cluster
-from [lecture 3 exercise 1](../03/README.md#exercise-1---deploy-a-kafka-cluster).
+**Task**: Run the indexer on the cluster within the interactive container:
 
-**Note**: If you experience an error code like `429 Too Many Requests` during the deployment of the Kafka Cluster
-from [lecture 3 exercise 1](../03/README.md#exercise-1---deploy-a-kafka-cluster) then use the Kafka cluster deployed by
-the DataHub platform instead.
-
-Once your Kafka cluster has been deployed, you can then add the cluster as an ingestion source in the DataHub platform.
-
-**Task**: Create an ingestion source for the Kafka cluster.
-
-1. Navigate to [localhost:9002/ingestion](http://localhost:9002/ingestion).
-1. Click on "Create new source"
-    1. Choose type: `Kafka`.
-    1. Configure recipe:
-        1. Fill the field with Bootstrap Servers:
-            - `prerequisites-kafka:9092` to use the internal Kafka cluster in the DataHub platform
-            - `kafka:9092` to use your kafka approach
-              from [lecture 3 exercise 1](../03/README.md#exercise-1---deploy-a-kafka-cluster).
-        1. Enable stateful ingestion under the advanced settings.
-        1. This will end up in a similar configuration as below:
-
-            ```yaml
-            source:
-                type: kafka
-                config:
-                    connection:
-                        consumer_config:
-                            security.protocol: PLAINTEXT
-                        bootstrap: 'kafka:9092'
-                    stateful_ingestion:
-                        enabled: true
-            ```
-
-    1. Schedule Ingestion: Toggle "Run on a schedule"
-    1. Finish up: Provide a name (`Kafka`) for your ingestion source.
-1. Once you have created the ingestion source it will then run. Make sure that the run is succeeded. If not then you can
-   check the logs to figure out the problem.
-
-**Task**: Check that the ingestion worked.
-
-1. Navigate to [localhost:9002](http://localhost:9002).
-1. If the ingestion worked then you should see platform named Kafka on the landing page of Datahub.
-
-**Task**: Look at the Kafka platform.
-
-You may or may not see any topics for Kafka on Datahub. If there are no topics, then it is because your Kafka cluster
-has no topics. Try to create a topic.
-
-**Task**: Create a Kafka topic (Optional).
-
-Now that you have created a topic you can then try to check if it is available on Datahub. However, you should see that
-nothing has changed. This is because DataHub pulls metadata on configured intervals.
-
-**Task**: Manually trigger the ingestion source.
-
-You can manually trigger the ingestion source here [localhost:9002/ingestion](http://localhost:9002/ingestion).
-When it is done, you can look for the newly created topic and this topic should be explorable in Datahub.
-
-**Task**: Enrich the metadata for a Kafka topic.
-
-1. Select a given topic.
-1. Update the metadata fields for the given topic. If the current tags, terms, domains etc. is not sufficient. Then add
-   additional tags, terms and domains to represent the given topic.
-    - About
-    - Owners
-    - Tags
-    - Glossary Terms
-    - Domain
+```bash
+spark-submit --conf "spark.executorEnv.PYTHONPATH=/tmp/pypkgs" --conf "spark.executorEnv.HF_HOME=/tmp/hf_cache" --conf "spark.executorEnv.HOME=/tmp" --py-files starter/embeddings.py,starter/utils.py starter/task4_spark_rag_indexer.py
+```
 
-### Exercise 5 - Add a MySQL database as ingestion source
+**Task**: Inspect your work: the point count in the Qdrant dashboard and the edge table that was written:
 
-This exercise is about adding a secondary ingestion source. The source is an already existing MySQL database.
+```bash
+hdfs dfs -fs hdfs://namenode:9000 -cat /graph/services/edges_json/*
+```
 
-**Task**: Create an ingestion source for the MySQL database cluster.
+You should see edges like `payment-gateway -> checkout-service` and `postgres-orders -> payment-gateway`; however, your results may be a bit different.
 
-1. Navigate to [localhost:9002/ingestion](http://localhost:9002/ingestion).
-1. Create a secret for the database password. Click on "Create new secret" in the Secrets tab.
-    1. Provide a name: `pw-mysl-db`
-    1. Provide the database password generated in [Exercise 1](#exercise-1---compose-a-datahub-platform).
-    1. Click Create.
-1. Click on "Create new source" in the Sources tab.
-    1. Choose type: `MySQL`.
-    1. Configure recipe:
-        1. Host and Port: `prerequisites-mysql:3306`
-        1. Username: `root`
-        1. Password: `${pw-mysl-db}`
-        1. Add a database allowance filter: `datahub`
-        1. This will end up in a similar configuration as below:
+### Exercise 5 - Hybrid retrieval: Vector RAG vs. Graph-RAG
 
-            ```yaml
-            source:
-                type: mysql
-                config:
-                    host_port: 'prerequisites-mysql:3306'
-                    database: null
-                    username: root
-                    include_tables: true
-                    include_views: true
-                    profiling:
-                        enabled: true
-                        profile_table_level_only: true
-                    stateful_ingestion:
-                        enabled: true
-                    password: '${pwmysqldb}'
-                    database_pattern:
-                        allow:
-                            - datahub
-            ```
+In this final exercise you will retrieve data from the Graph-RAG and compare it with a Vector RAG.
 
-    1. Schedule Ingestion: Toggle "Run on a schedule"
-    1. Finish up: Provide a name (`MySQL`) for your ingestion source.
-1. Once you have created the ingestion source it will then run. Make sure that the run is succeeded. If not then you can
-   check the logs to figure out the problem.
+**Task**: Run the complete `starter/task5_hybrid_rag_query.py`:
 
-**Note**: If you get the error
-`sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'10.1.155.37' (using password: YES)")`,
-just have the password as plaintext
-
-### Exercise 6 - Adding a custom dataset to DataHub
-
-The objective of this exercise is to add a custom dataset to DataHub. The exercise consists of an already complete
-example. However, you are more than welcome to modify the existing example to fit your selected project.
-
-The example is about tracking experiments. In this case, a simple experiment where a random value will be drawn multiple
-times from a uniform distribution between 0 and 1. The results of the experiments will be stored in a database composed
-of two tables in a database called `experiment` and `results` and a view called `analysis`. Moreover, a Python
-script ([hints/experiment.py](./hints/experiment.py)) has been provided to simulate multiple new experiments.
-
-#### Exercise 6.1 - Simulate experiments
-
-Decide whether to go with the existing example or modify and create your content to match to project.
-
-**Task**: Familiarize your self with [hints/experiment.py](./hints/experiment.py) Python file.
-
-- Which framework is used to interact with the database?
-
-**Task**: Denote the schemas for the `experiment` and `results` tables in the database.
-
-**Task**: Execute the [hints/experiment.py](./hints/experiment.py) Python file.
-
-**Note**: This task assumes you already have access to the database from your localhost. If not please enable the
-port-forwarding: `kubectl port-forward svc/prerequisites-mysql 3306:3306`.
-
-**Task**: Create an `analysis` view in the database to summarise the experiments.
-
-- Use the SQL statement below:
-
-    ```sql
-    CREATE VIEW analysis AS SELECT r.experiment_id, e.created_date, r.valid, AVG(r.value) avg_value FROM results r INNER JOIN experiment e ON r.experiment_id=e.id GROUP BY r.experiment_id, r.valid;
-    ```
-
-**Task**: What are the average value of from the simulated experiments?**
-
-#### Exercise 6.2 - Data discovery and rich metadata on the newly create tables
-
-[Exercise 6.1](#exercise-61---simulate-experiments) uses the internal database deployed by DataHub to store the results
-of the experiments.
-
-**Task**: Navigate to [localhost:9002/ingestion](http://localhost:9002/ingestion) and run ingestion on the MySQL
-platform.
-
-**Task**: Validate the three newly created datasets in the MySQL platform.
-
-**Hint**: Navigate
-to [http://localhost:9002/search?filter_platform=urn:li:dataPlatform:mysql](http://localhost:9002/search?filter_platform=urn:li:dataPlatform:mysql)
-
-**Task**: Update metadata to the three newly created datasets.
-
-- Datasets of interest:
-    - [Table/MySQL/datahub/experiment](http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:mysql,datahub.experiment,PROD)/Schema?is_lineage_mode=false&schemaFilter=)
-    - [Table/MySQL/datahub/results](http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:mysql,datahub.results,PROD)/Schema?is_lineage_mode=false&schemaFilter=)
-    - [View/MySQL/datahub/analysis](http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:mysql,datahub.analysis,PROD)/Schema?is_lineage_mode=false&schemaFilter=)
-- Metadata of interest:
-    - Owner
-    - Tags
-    - Glossary Terms
-    - Domain
-
-#### Exercise 6.3 - Enable data provenance
-
-Data provenance is important in analytical applications to understand underlying dependencies. The objective of this
-sub-exercise is to update the lineage between the three newly created datasets.
-
-This exercise is motivated and inspired
-by [About DataHub Lineage](https://datahubproject.io/docs/lineage/lineage-feature-guide/)
-and [Lineage - Why Would You Use Lineage?](https://datahubproject.io/docs/api/tutorials/lineage/). There is a Python
-file here: [hints/linage.py](./hints/lineage.py) which updates the lineage between the three datasets.
-
-**Task**: Familiarize yourself with [hints/lineage.py](./hints/lineage.py) Python file.
-
-**Task**: Execute the [hints/lineage.py](./hints/lineage.py) Python file.
-
-**Note**: This task assumes you already have access to Datahub GMS from your localhost. If not please enable the
-port-forwarding: `kubectl port-forward svc/datahub-datahub-gms 8080:8080`.
-
-**Task**: Navigate
-to [View/MySQL/datahub/analysis - lineage](http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:mysql,datahub.analysis,PROD)/Schema?end_time_millis&is_lineage_mode=true&schemaFilter=&start_time_millis)
-and identify the two upstream datasets.
-
-**Task**: Navigate
-to [View/MySQL/datahub/analysis - lineage](http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:mysql,datahub.analysis,PROD)/Schema?end_time_millis&is_lineage_mode=true&schemaFilter=&start_time_millis)
-and take a screenshot.
-
-#### Exercise 6.4 - Data provenance as a data expert evangelist
-
-We are now interested in updating to column-level lineage from the general
-lineage ([Exercise 6.3](#exercise-63---enable-data-provenance)).
-
-**Task**: Look into the example of column-level
-lineage [here](https://datahubproject.io/docs/api/tutorials/lineage/#add-column-level-lineage).
-
-**Task**: Create a new Python file which encounter for column-level lineage.
-
-**Hint: You may look into [Exercise 6.1](#exercise-61---simulate-experiments) and examine the `analyis` view to
-understand the lineage between the three datasets.
+```bash
+python3 starter/task5_hybrid_rag_query.py   # defaults to the 504 root-cause question
+```
+
+The script retrieves the top-K incidents by vector similarity, expands the search by following failing dependencies in the service graph (each hop = one dependency deeper), and asks llama.cpp the same question twice, once with each context, and prints the two answers side by side.
+
+The expected output should look something like this (you might get a different result):
+
+```text
+===== VECTOR-ONLY RAG (semantic top-K) =====
+  INC-017   CRITICAL Auth       checkout-service -> auth-service    score=...
+  ...
+===== GRAPH-RAG EXPANSION (2-hop over service graph) =====
+  INC-042   CRITICAL Memory     redis-cluster-02 -> none   [graph hop 2 via redis-cluster-02]
+===== VERDICT =====
+  >> Vector-only RAG MISSES INC-042; Graph-RAG recovers them (incl. CRITICAL root cause!).
+```
+
+**Task**: Try and run the following commands with different configurations and note what changed in the retrieved context:
+
+```bash
+python3 starter/task5_hybrid_rag_query.py --hops 1        # does 1 hop reach redis?
+python3 starter/task5_hybrid_rag_query.py --k 10          # can top-K alone find INC-042?
+python3 starter/task5_hybrid_rag_query.py --graph-min-severity MEDIUM
+python3 starter/task5_hybrid_rag_query.py --query "redis cluster out of memory killed process"
+```
 
 ## Step-by-step guide to clean up
 
 ### Automated clean up
 
-If you have Python installed on your machine, you can use the following command to clean up all resources:
+**Windows**: `python cleanup.py`
 
-**Windows**:
+**MacOS / Linux**: `python3 cleanup.py`
 
-````bash
-python cleanup.py
-````
-
-**MacOS / Linux**:
-
-````bash
-python3 cleanup.py
-````
-
-The script will delete all resources created in the exercises.
+It deletes today's `llama-cpp` and `qdrant` resources and prints the remaining manual steps (connector,
+topics, HDFS directories).
 
 ### Manual clean up
 
-You are able to clean up your environment by running the commands in the chunk below:
-
-- Today's exercises.
-    1. `helm uninstall datahub`
-    1. `helm uninstall prerequisites`
-    1. `kubectl delete secret mysql-secrets neo4j-secrets`
-    1. `kubectl delete pvc data-prerequisites-mysql-0 \
-      data-prerequisites-neo4j-0 \
-      elasticsearch-master-elasticsearch-master-0 \
-      data-prerequisites-kafka-broker-0 \
-      data-prerequisites-zookeeper-0
-     `
-
-- `cd` into the `lecture/03` folder in the repository (in case you installed the Kafka cluster manually)
-    1. `kubectl delete -f redpanda.yaml`
-    1. `kubectl delete -f kafka-schema-registry.yaml`
-    1. `kubectl delete -f kafka-connect.yaml`
-    1. `kubectl delete -f kafka-ksqldb.yaml`
-    1. `helm uninstall kafka`
-    1. `kubectl delete pvc data-kafka-controller-0 \
-      data-kafka-controller-1 \
-      data-kafka-controller-2
-        `
-
-You can get a list of the resources to verify that they are deleted.
-
-- `kubectl get pods`
-- `kubectl get services`
-- `kubectl get deployments`
-- `kubectl get statefulsets`
-- `kubectl get configmap`
-- `kubectl get secret` (DO NOT DELETE `<NAMESPACE>-sa-manual-secret`, you WILL lose access to the Kubernetes cluster)
-- `kubectl get pvc`
+- Today's exercises:
+    1. `kubectl delete -f k8s/llama-cpp.yaml`
+    2. `kubectl delete -f k8s/qdrant.yaml` (includes `qdrant-pvc`)
+    3. `curl -X DELETE http://127.0.0.1:8083/connectors/hdfs-sink-enriched` (after port-forward)
+    4. Delete topics `raw-incidents`, `enriched-incidents` in Redpanda
+    5. From an hdfs-cli pod: `hdfs dfs -fs hdfs://namenode:9000 -rm -r /topics/enriched-incidents /rag /graph`
+- Previous lectures (keep if you continue tomorrow): `helm delete spark`, `helm delete kafka`,
+  `services/interactive`, `services/hdfs` - see earlier exercise READMEs.
