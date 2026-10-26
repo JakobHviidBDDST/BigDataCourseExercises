@@ -34,3 +34,5 @@ acryldata/datahub-kafka-setup:v0.11.0
 acryldata/datahub-mysql-setup:v0.11.0
 acryldata/datahub-upgrade:v0.11.0
 bitnamilegacy/redis-cluster:7.4.0-debian-12-r1
+ghcr.io/ggml-org/llama.cpp:server
+qdrant/qdrant:v1.20.0

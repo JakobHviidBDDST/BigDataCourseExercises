@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-cpp
+  labels:
+    app: llama-cpp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llama-cpp
+  template:
+    metadata:
+      labels:
+        app: llama-cpp
+    spec:
+      containers:
+        - name: llama-cpp
+          image: ghcr.io/ggml-org/llama.cpp:server
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--hf-repo"
+            - "Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+            - "--hf-file"
+            - "qwen2.5-0.5b-instruct-q8_0.gguf"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8000"
+            - "--ctx-size"
+            # Total prompt cache, split across the --parallel slots: 8192/4 = 2048 per slot.
+            - "8192"
+            - "--parallel"
+            - "4"
+            - "--threads"
+            - "4"
+          env:
+            - name: LLAMA_CACHE
+              value: "/hf-cache"
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            requests:
+              cpu: "4"
+              memory: "2Gi"
+            limits:
+              cpu: "6"
+              memory: "4Gi"
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /hf-cache
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: hf-cache
+          emptyDir:
+            sizeLimit: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-cpp
+  labels:
+    app: llama-cpp
+spec:
+  selector:
+    app: llama-cpp
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
