@@ -134,9 +134,6 @@ topic this time, and why?
 
 **Hint**: Is any of the data duplicated?
 
-**Task** (optional, Hive): create an external table over the sink directory and query the tags with
-`get_json_object` - see [solution/hive_external_table.sql](./solution/hive_external_table.sql).
-
 ### Exercise 4 - Scalable RAG indexing: Embedders into Qdrant + a Graph
 
 **Task**: Deploy the vector database:
@@ -172,26 +169,9 @@ hdfs dfs -fs hdfs://namenode:9000 -cat /graph/services/edges_json/*
 
 You should see edges like `payment-gateway -> checkout-service` and `postgres-orders -> payment-gateway`; however, your results may be a bit different.
 
-<details>
-<summary><strong>Optional extension</strong>: GraphFrames</summary>
-
-The adjacency tables are exactly the `vertices`/`edges` inputs GraphFrames expects:
-
-```bash
-pip install graphframes-py==0.12.3
-spark-submit --packages io.graphframes:graphframes-spark3_2.12:0.12.3 your_job.py
-```
-
-```python
-from graphframes import GraphFrame
-g = GraphFrame(vertices, edges.select("source_service AS src", "target_service AS dst"))
-g.connectedComponents().show()   # or pageRank, BFS, shortest paths...
-```
-</details>
-
 ### Exercise 5 - Hybrid retrieval: Vector RAG vs. Graph-RAG
 
-In this final exercise you will retrieve data from the ..................................
+In this final exercise you will retrieve data from the Graph-RAG and compare it with a Vector RAG.
 
 **Task**: Run the complete `starter/task5_hybrid_rag_query.py`:
 
@@ -199,7 +179,9 @@ In this final exercise you will retrieve data from the .........................
 python3 starter/task5_hybrid_rag_query.py   # defaults to the 504 root-cause question
 ```
 
-The script retrieves the top-K incidents by vector similarity, expands the search by following failing dependencies in the service graph (each hop = one dependency deeper), and asks llama.cpp the same question twice - once with each context - and prints the two answers side by side. Expected output (schematic):
+The script retrieves the top-K incidents by vector similarity, expands the search by following failing dependencies in the service graph (each hop = one dependency deeper), and asks llama.cpp the same question twice, once with each context, and prints the two answers side by side.
+
+The expected output should look something like this (you might get a different result):
 
 ```text
 ===== VECTOR-ONLY RAG (semantic top-K) =====
@@ -211,7 +193,7 @@ The script retrieves the top-K incidents by vector similarity, expands the searc
   >> Vector-only RAG MISSES INC-042; Graph-RAG recovers them (incl. CRITICAL root cause!).
 ```
 
-**Task**: Run the ablations, and note for each what changed in the retrieved context:
+**Task**: Try and run the following commands with different configurations and note what changed in the retrieved context:
 
 ```bash
 python3 starter/task5_hybrid_rag_query.py --hops 1        # does 1 hop reach redis?
@@ -229,7 +211,7 @@ python3 starter/task5_hybrid_rag_query.py --query "redis cluster out of memory k
 **MacOS / Linux**: `python3 cleanup.py`
 
 It deletes today's `llama-cpp` and `qdrant` resources and prints the remaining manual steps (connector,
-topics, HDFS directories, Hive table).
+topics, HDFS directories).
 
 ### Manual clean up
 

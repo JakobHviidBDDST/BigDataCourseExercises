@@ -42,8 +42,6 @@ def main():
     print("  3. HDFS artifacts, from an hdfs-cli pod (see services/hdfs):")
     print("       hdfs dfs -fs hdfs://namenode:9000 -rm -r /topics/enriched-incidents")
     print("       hdfs dfs -fs hdfs://namenode:9000 -rm -r /rag /graph")
-    print("  4. Hive table (if you created it):")
-    print("       DROP TABLE IF EXISTS incidents.enriched_raw;")
     print()
     print("Leftovers from previous lectures (keep them if you continue tomorrow):")
     print("  - helm delete spark / kafka; kubectl delete -f ../../03/exercise/*.yaml")
