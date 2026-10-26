@@ -18,11 +18,21 @@ information or experience bugs in our examples!
 | Spark | Check lecture 04 exercise 1 | `spark://spark-master-svc:7077` |
 
 
-When using an interactive pod, make sure to install the dependencies for this lab:
+Use the interactive pod in [services/interactive/interactive.yaml](../../../services/interactive/interactive.yaml), in the same namespace as the other services.
+
+You can copy the exercise files from `lectures/07/exercise` on your machine like this (replace `POD_NAME` with your interactive pod's name):
+
+```bash
+kubectl cp . POD_NAME:/root/code/exercise07
+```
+
+Remember to install the dependencies inside the interactive pod, from `/root/code/exercise07`:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+Also run `pip install setuptools` inside the interactive pod; it supplies the `distutils` module required by PySpark on Python 3.12.
 
 
 ### Exercise 1 - Deploy a Micro-LLM using llama.cpp
@@ -149,7 +159,7 @@ kubectl port-forward svc/qdrant 6333    # dashboard: http://127.0.0.1:6333/dashb
 
 **Notice**: The embedding is computed with the bi-encoder inside the Spark job, not with the llama.cpp chat model from Exercise 1 (the job docstring explains why).
 
-**Task**: Prepare the Spark Workers to work with the Python scripts by running the following shell script:
+**Task**: Prepare the Spark Workers to work with the Python scripts by running the following shell script on your machine (outside the interactive container), from `lectures/07/exercise`, where `kubectl` is configured:
 
 ```bash
 bash ./k8s/install_packages_on_spark_workers.sh
@@ -173,7 +183,7 @@ You should see edges like `payment-gateway -> checkout-service` and `postgres-or
 
 In this final exercise you will retrieve data from the Graph-RAG and compare it with a Vector RAG.
 
-**Task**: Run the complete `starter/task5_hybrid_rag_query.py`:
+**Task**: Run the complete `starter/task5_hybrid_rag_query.py` inside the interactive container:
 
 ```bash
 python3 starter/task5_hybrid_rag_query.py   # defaults to the 504 root-cause question
