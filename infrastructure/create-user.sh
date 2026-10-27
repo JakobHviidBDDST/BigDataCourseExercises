@@ -57,7 +57,10 @@ EOF
 
 # Remove the old cluster-wide binding to the custom read-all ClusterRole, which also exposed Secrets in every
 # namespace. The roleRef of a binding is immutable, so the new bindings below use new names.
-microk8s kubectl delete clusterrolebinding $OLD_CLUSTER_ROLE_BINDING --ignore-not-found
+microk8s kubectl delete clusterrolebinding "$OLD_CLUSTER_ROLE_BINDING" --ignore-not-found || {
+  echo "Failed to remove legacy permissions. Exiting." >&2
+  exit 1
+}
 
 # Read-only access to namespaced resources in all namespaces, using the built-in "view" ClusterRole.
 # "view" deliberately excludes Secrets (and RBAC objects), so other students' tokens stay private.
