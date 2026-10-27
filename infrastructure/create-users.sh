@@ -13,5 +13,5 @@ echo "Create kubeconfigs!"
 
 while read -r NAMESPACE
 do
-  ./create-user.sh "$SERVER" "$NAMESPACE" "$NAMESPACE"
+  ./create-user.sh "$SERVER" "$NAMESPACE" "$NAMESPACE" || exit 1
 done <users.txt
