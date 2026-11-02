@@ -154,10 +154,9 @@ The importance of organizing the metadata of the data sources has a direct impac
 **Task**: Create your glossary terms with the UI.
 
 1. A new domain that reflects the part of the organization you are interested in. E.g. `Engineering`.
-2. A new business glossary term group. E.g. `RD`.
+2. A new business glossary Term Group. E.g. `RD`.
 3. Append two terms in your newly created term group (`RD`) called `experiments` and `results`.
-4. Hereafter create one new term group (`analysis`) that inherits from the `RD` term group. How do you expect `analysis`
-   will fit in the hierarchy?
+4. Hereafter create one new term group (`analysis`) that inherits from the `RD` term group. How do you expect `analysis` will fit in the hierarchy?
 
 **Hint**: Watch this short session [DataHub 201: Business Glossary](https://youtu.be/pl9zx0CtdiU?si=1JLSC0C5uD7pOth2) on YouTube to get a different explanation on this concept.
 
@@ -167,8 +166,7 @@ The importance of organizing the metadata of the data sources has a direct impac
 
 ### Exercise 3 - Checkout analytics overview in the UI
 
-The DataHub platform comes with a nice analytics overview page. Navigate
-to [localhost:9002/analytics](http://localhost:9002/analytics).
+The DataHub platform comes with a nice analytics overview page. Navigate to [localhost:9002/analytics](http://localhost:9002/analytics).
 Here we can obtain an overview of the usage of the platform and various other statistics.
 
 **Task**: Play around in the Analytics UI.
@@ -177,25 +175,36 @@ Here we can obtain an overview of the usage of the platform and various other st
 
 **Task**: Find metrics for your newly added Domain.
 
-- Filter "Data Landscape Summary" to only include the `Engineering` domain and report the "Section Views across Entity
-  Types" metrics to rest of the project group.
+- Filter "Data Landscape Summary" to only include the `Engineering` domain and look at the "Section Views across Entity Types".
 
 ### Exercise 4 - Add a Kafka ingestion source
 
 We will now create an Ingestion source for a Kafka cluster.
-An ingestion source tells DataHub how to connect to a service and allows DataHub to collect metadata from the service.
-In the case of a given Kafka cluster, DataHub is collecting topic names. The DataHub platform can collect information
-about the record schema from a schema registry service. This is recommended if you are using the Avro file format for
-the records in the topics.
+An ingestion source tells DataHub how to connect to a service and allows DataHub to collect metadata from the service. In the case of a given Kafka cluster, DataHub is collecting topic names. The DataHub platform can collect information about the record schema from a schema registry service. This is recommended if you are using the Avro file format for the records in the topics.
 
 **Note**: We are not using schema registry for this exercise session.
 
-**Task**: Use the internal Kafka Cluster or create a Kafka cluster
-from [lecture 3 exercise 1](../03/README.md#exercise-1---deploy-a-kafka-cluster).
+**Task**: We must install Python packages on the datahub-acryl pod in order to connect Kafka as an ingestion source.
 
-**Note**: If you experience an error code like `429 Too Many Requests` during the deployment of the Kafka Cluster
-from [lecture 3 exercise 1](../03/README.md#exercise-1---deploy-a-kafka-cluster) then use the Kafka cluster deployed by
-the DataHub platform instead.
+Start by finding the name of the pod:
+```bash
+kubectl get pods -l app.kubernetes.io/name=acryl-datahub-actions
+```
+
+It should output something like the following:
+```text
+NAME                                             READY   STATUS    RESTARTS   AGE
+datahub-acryl-datahub-actions-5cf5b6f774-tn52s   1/1     Running   0          46m
+```
+
+Then use the name to run the following command for installing the Python packages:
+```bash
+kubectl exec -it <NAME-OF-DATAHUB-ACRYL-POD> -- /tmp/datahub/ingest/venv-kafka-0.11.0/bin/pip install authlib httpx cachetools "setuptools<75"
+```
+
+It might give an error at the end of installing the packages. This can simply be ignored.
+
+**Task**: Use the internal Kafka Cluster or create a Kafka cluster from [lecture 3 exercise 1](../../03/exercise/README.md).
 
 Once your Kafka cluster has been deployed, you can then add the cluster as an ingestion source in the DataHub platform.
 
@@ -204,13 +213,12 @@ Once your Kafka cluster has been deployed, you can then add the cluster as an in
 1. Navigate to [localhost:9002/ingestion](http://localhost:9002/ingestion).
 2. Click on "Create new source"
     1. Choose type: `Kafka`.
-    1. Configure recipe:
-        1. Fill the field with Bootstrap Servers:
+    2. Configure recipe:
+        1. Fill the field with "Bootstrap Servers":
             - `prerequisites-kafka:9092` to use the internal Kafka cluster in the DataHub platform
-            - `kafka:9092` to use your kafka approach
-              from [lecture 3 exercise 1](../03/README.md#exercise-1---deploy-a-kafka-cluster).
-        1. Enable stateful ingestion under the advanced settings.
-        1. This will end up in a similar configuration as below:
+            - `kafka:9092` to use your kafka approach from [lecture 3 exercise 1](../../03/exercise/README.md).
+        2. "Enable Stateful Ingestion" under the Advanced Settings.
+        3. This will end up in a similar configuration as below:
 
             ```yaml
             source:
@@ -224,10 +232,9 @@ Once your Kafka cluster has been deployed, you can then add the cluster as an in
                         enabled: true
             ```
 
-    1. Schedule Ingestion: Toggle "Run on a schedule"
-    1. Finish up: Provide a name (`Kafka`) for your ingestion source.
-3. Once you have created the ingestion source it will then run. Make sure that the run is succeeded. If not then you can
-   check the logs to figure out the problem.
+    3. Schedule Ingestion: Toggle "Run on a schedule"
+    4. Finish up: Provide a name (`Kafka`) for your ingestion source.
+3. Once you have created the ingestion source it will then run. Make sure that the run is succeeded. If not then you can check the logs to figure out the problem.
 
 **Task**: Check that the ingestion worked.
 
@@ -236,13 +243,11 @@ Once your Kafka cluster has been deployed, you can then add the cluster as an in
 
 **Task**: Look at the Kafka platform.
 
-You may or may not see any topics for Kafka on Datahub. If there are no topics, then it is because your Kafka cluster
-has no topics. Try to create a topic.
+You may or may not see any topics for Kafka on Datahub. If there are no topics, then it is because your Kafka cluster has no topics. Try to create a topic.
 
 **Task**: Create a Kafka topic (Optional).
 
-Now that you have created a topic you can then try to check if it is available on Datahub. However, you should see that
-nothing has changed. This is because DataHub pulls metadata on configured intervals.
+Now that you have created a topic you can then try to check if it is available on Datahub. However, you should see that nothing has changed. This is because DataHub pulls metadata on configured intervals.
 
 **Task**: Manually trigger the ingestion source.
 
@@ -269,16 +274,16 @@ This exercise is about adding a secondary ingestion source. The source is an alr
 1. Navigate to [localhost:9002/ingestion](http://localhost:9002/ingestion).
 2. Create a secret for the database password. Click on "Create new secret" in the Secrets tab.
     1. Provide a name: `pw-mysl-db`
-    1. Provide the database password generated in [Exercise 1](#exercise-1---compose-a-datahub-platform).
-    1. Click Create.
+    2. Provide the database password generated in [Exercise 1](#exercise-1---compose-a-datahub-platform).
+    3. Click Create.
 3. Click on "Create new source" in the Sources tab.
     1. Choose type: `MySQL`.
-    1. Configure recipe:
+    2. Configure recipe:
         1. Host and Port: `prerequisites-mysql:3306`
-        1. Username: `root`
-        1. Password: `${pw-mysl-db}`
-        1. Add a database allowance filter: `datahub`
-        1. This will end up in a similar configuration as below:
+        2. Username: `root`
+        3. Password: `${pw-mysl-db}`
+        4. Add a database allowance pattern: `datahub`
+        5. This will end up in a similar configuration as below:
 
             ```yaml
             source:
@@ -300,24 +305,17 @@ This exercise is about adding a secondary ingestion source. The source is an alr
                             - datahub
             ```
 
-    1. Schedule Ingestion: Toggle "Run on a schedule"
-    1. Finish up: Provide a name (`MySQL`) for your ingestion source.
-4. Once you have created the ingestion source it will then run. Make sure that the run is succeeded. If not then you can
-   check the logs to figure out the problem.
+    3. Schedule Ingestion: Toggle "Run on a schedule"
+    4. Finish up: Provide a name (`MySQL`) for your ingestion source.
+4. Once you have created the ingestion source it will then run. Make sure that the run is succeeded. If not then you can check the logs to figure out the problem.
 
-**Note**: If you get the error
-`sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'10.1.155.37' (using password: YES)")`,
-just have the password as plaintext
+**Note**: If you get the error `sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'10.1.155.37' (using password: YES)")`, just have the password as plaintext.
 
 ### Exercise 6 - Adding a custom dataset to DataHub
 
-The objective of this exercise is to add a custom dataset to DataHub. The exercise consists of an already complete
-example. However, you are more than welcome to modify the existing example to fit your selected project.
+The objective of this exercise is to add a custom dataset to DataHub. The exercise consists of an already complete example. However, you are more than welcome to modify the existing example to fit your selected project.
 
-The example is about tracking experiments. In this case, a simple experiment where a random value will be drawn multiple
-times from a uniform distribution between 0 and 1. The results of the experiments will be stored in a database composed
-of two tables in a database called `experiment` and `results` and a view called `analysis`. Moreover, a Python
-script ([hints/experiment.py](./hints/experiment.py)) has been provided to simulate multiple new experiments.
+The example is about tracking experiments. In this case, a simple experiment where a random value will be drawn multiple times from a uniform distribution between 0 and 1. The results of the experiments will be stored in a database composed of two tables in a database called `experiment` and `results` and a view called `analysis`. Moreover, a Python script ([hints/experiment.py](./hints/experiment.py)) has been provided to simulate multiple new experiments.
 
 #### Exercise 6.1 - Simulate experiments
 
